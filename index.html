@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>مكتب تحليل الذهب — COT & News Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0B0D10;
@@ -95,6 +96,27 @@
   .stats-bar b { color:var(--text); }
 
   footer { text-align:center; margin-top:26px; font-size:11px; color:var(--text-dim); }
+
+  /* Auth */
+  .auth-wrap { max-width: 380px; margin: 60px auto; }
+  .auth-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:24px; }
+  .auth-title { font-family:Georgia, serif; font-size:19px; text-align:center; margin-bottom:18px; }
+  .auth-field { margin-bottom:12px; }
+  .auth-field label { display:block; font-size:12px; color:var(--text-dim); margin-bottom:5px; }
+  .auth-field input { width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:6px; color:var(--text); font-size:13px; padding:10px; outline:none; box-sizing:border-box; }
+  .auth-btn { width:100%; background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:11px; font-size:14px; font-weight:700; cursor:pointer; margin-top:6px; }
+  .auth-switch { text-align:center; margin-top:14px; font-size:12.5px; color:var(--text-dim); }
+  .auth-switch a { color:var(--gold); cursor:pointer; text-decoration:underline; }
+  .auth-msg { font-size:12.5px; text-align:center; margin-top:10px; min-height:16px; }
+  .auth-msg.err { color:var(--bear); }
+  .auth-msg.ok { color:var(--bull); }
+
+  .pending-card { max-width: 460px; margin: 60px auto; background:var(--panel); border:1px solid var(--gold-soft); border-radius:10px; padding:28px; text-align:center; }
+  .pending-card h2 { font-family:Georgia, serif; font-size:19px; margin-bottom:10px; }
+  .pending-card p { font-size:13.5px; line-height:1.9; color:var(--text-dim); }
+
+  .user-bar { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:6px; font-size:12px; color:var(--text-dim); }
+  .logout-btn { background:none; border:1px solid var(--line); color:var(--text-dim); border-radius:5px; padding:4px 10px; cursor:pointer; font-size:12px; }
 </style>
 </head>
 <body>
@@ -106,6 +128,39 @@
       <div class="subtitle mono">XAUUSD · COT INTELLIGENCE · WEEKLY OUTLOOK</div>
     </div>
   </header>
+
+  <!-- Auth gate -->
+  <div id="authGate" class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-title" id="authTitle">تسجيل الدخول</div>
+      <div class="auth-field">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="authEmail" placeholder="you@example.com" />
+      </div>
+      <div class="auth-field">
+        <label>كلمة السر</label>
+        <input type="password" id="authPassword" placeholder="••••••••" />
+      </div>
+      <button class="auth-btn" id="authSubmitBtn">دخول</button>
+      <div class="auth-switch">
+        <span id="authSwitchText">ما عندك حساب؟</span> <a id="authSwitchLink">إنشاء حساب جديد</a>
+      </div>
+      <div class="auth-msg" id="authMsg"></div>
+    </div>
+  </div>
+
+  <!-- Pending activation -->
+  <div id="pendingCard" class="pending-card" style="display:none;">
+    <h2>⏳ حسابك بانتظار التفعيل</h2>
+    <p>سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.</p>
+    <button class="logout-btn" id="pendingLogoutBtn" style="margin-top:14px;">تسجيل خروج</button>
+  </div>
+
+  <div id="appContent" style="display:none;">
+    <div class="user-bar">
+      <span id="userEmailLabel"></span>
+      <button class="logout-btn" id="logoutBtn">تسجيل خروج</button>
+    </div>
 
   <!-- Auto analyze -->
   <div class="auto-card">
@@ -214,10 +269,100 @@
   </div>
 
   <footer>هذا التحليل بمساعدة الذكاء الاصطناعي لأغراض تعليمية وليس توصية استثمارية.</footer>
+  </div><!-- /appContent -->
 </div>
 
 <script>
 const C = { bull:"#3FA789", bear:"#D1584C", neutral:"#8E93A0" };
+
+// ---------- Auth ----------
+let sb = null;
+let currentSession = null;
+let authMode = "login"; // or "signup"
+
+async function initAuth() {
+  const cfgRes = await fetch("/api/config");
+  const cfg = await cfgRes.json();
+  sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+  const { data: { session } } = await sb.auth.getSession();
+  await handleSession(session);
+
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    await handleSession(session);
+  });
+}
+
+async function handleSession(session) {
+  currentSession = session;
+  if (!session) {
+    document.getElementById("authGate").style.display = "block";
+    document.getElementById("pendingCard").style.display = "none";
+    document.getElementById("appContent").style.display = "none";
+    return;
+  }
+  // فحص حالة التفعيل بجدول profiles
+  let isActive = false;
+  try {
+    const { data, error } = await sb.from("profiles").select("is_active").eq("id", session.user.id).single();
+    if (!error && data) isActive = !!data.is_active;
+  } catch (e) {}
+
+  document.getElementById("authGate").style.display = "none";
+  if (isActive) {
+    document.getElementById("pendingCard").style.display = "none";
+    document.getElementById("appContent").style.display = "block";
+    document.getElementById("userEmailLabel").textContent = session.user.email || "";
+    document.getElementById("histCount").textContent = getHistory().length;
+  } else {
+    document.getElementById("pendingCard").style.display = "block";
+    document.getElementById("appContent").style.display = "none";
+  }
+}
+
+function setAuthMsg(msg, type) {
+  const el = document.getElementById("authMsg");
+  el.textContent = msg || "";
+  el.className = "auth-msg" + (type ? " " + type : "");
+}
+
+document.getElementById("authSwitchLink").onclick = () => {
+  authMode = authMode === "login" ? "signup" : "login";
+  document.getElementById("authTitle").textContent = authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب جديد";
+  document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "دخول" : "إنشاء حساب";
+  document.getElementById("authSwitchText").textContent = authMode === "login" ? "ما عندك حساب؟" : "عندك حساب أصلاً؟";
+  document.getElementById("authSwitchLink").textContent = authMode === "login" ? "إنشاء حساب جديد" : "تسجيل الدخول";
+  setAuthMsg("");
+};
+
+document.getElementById("authSubmitBtn").onclick = async () => {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  if (!email || !password) { setAuthMsg("عبي البريد وكلمة السر.", "err"); return; }
+  setAuthMsg("جارٍ المعالجة...");
+  try {
+    if (authMode === "login") {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setAuthMsg("");
+    } else {
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      setAuthMsg("تم إنشاء الحساب! لو طُلب تأكيد بريد، افحص إيميلك، وبعدين سجل دخول.", "ok");
+    }
+  } catch (e) {
+    setAuthMsg(e.message || "صار خطأ، حاول من جديد.", "err");
+  }
+};
+
+document.getElementById("logoutBtn").onclick = () => sb.auth.signOut();
+document.getElementById("pendingLogoutBtn").onclick = () => sb.auth.signOut();
+
+function authHeaders() {
+  return currentSession ? { "Authorization": "Bearer " + currentSession.access_token } : {};
+}
+
+initAuth();
 const HISTORY_KEY = "gold-cot-history";
 let images = []; // {id, name, mediaType, data, preview}
 let loading = false;
@@ -345,7 +490,7 @@ async function autoAnalyze() {
   document.getElementById("sourcesBox").style.display = "none";
 
   try {
-    const response = await fetch("/api/auto-analyze", { method: "POST" });
+    const response = await fetch("/api/auto-analyze", { method: "POST", headers: { ...authHeaders() } });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "خطأ من الخادم");
 
@@ -458,7 +603,7 @@ ${newsRaw || "لم يتم إدخال أخبار نصياً (تحقق من الص
   try {
     const response = await fetch("/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({ system: sys, content }),
     });
     const data = await response.json();
