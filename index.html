@@ -165,7 +165,7 @@
   <!-- Auto analyze -->
   <div class="auto-card">
     <div class="auto-title">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي القادم بنفسه، وبيحلل مباشرة — بدون ما ترفع أو تكتب أي شي.</div>
+    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية (RSI, MACD, MAs, Bollinger) بنفسه، ويحلل الأربعة معاً مباشرة.</div>
     <button id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel">حلّل الآن تلقائياً</span>
@@ -173,52 +173,7 @@
     <div class="sources-box" id="sourcesBox"></div>
   </div>
 
-  <div class="divider-or">أو أدخل البيانات يدوياً</div>
-
-  <!-- Guide -->
-  <button class="toggle-btn" id="guideToggle">
-    <span>ℹ️ من وين تجيب البيانات كل أسبوع (مجاناً)</span>
-    <span id="guideArrow">▾</span>
-  </button>
-  <div class="card guide-body" id="guideBody" style="display:none;">
-    <div><b>تقرير COT الرسمي:</b> موقع <span class="mono" style="color:var(--gold)">cftc.gov</span> — قسم Commitments of Traders، اختر Gold (CME). يصدر كل جمعة الساعة 3:30 مساءً بتوقيت أمريكا الشرقية.</div>
-    <div><b>عرض مبسّط:</b> <span class="mono" style="color:var(--gold)">tradingster.com/cot</span> أو <span class="mono" style="color:var(--gold)">barchart.com</span>.</div>
-    <div><b>الأخبار:</b> <span class="mono" style="color:var(--gold)">forexlive.com</span>، <span class="mono" style="color:var(--gold)">investing.com/calendar</span>، أو <span class="mono" style="color:var(--gold)">fxstreet.com</span>.</div>
-    <div style="margin-top:6px; font-size:12px;">خد سكرين شوت أو انسخ العناوين/الأرقام وحطها بالأسفل — التحليل بيصير تلقائي.</div>
-  </div>
-
-  <!-- Images -->
-  <div class="card">
-    <div class="upload-row">
-      <div class="card-title" style="margin:0;">📎 أرفق صورة شارت السعر (إلزامي) + صور COT/الأخبار (اختياري)</div>
-      <label class="file-btn">اختر صور
-        <input type="file" id="fileInput" accept="image/*" multiple />
-      </label>
-    </div>
-    <div id="imgPreview"></div>
-    <div class="hint">ممكن ترفع أكتر من صورة، أو تعمل نسخ (Ctrl+V) وتلصق مباشرة بأي مكان بالصفحة.</div>
-  </div>
-
-  <!-- Inputs -->
-  <div class="grid2">
-    <div class="card">
-      <div class="card-title">📊 بيانات تقرير COT (اختياري إذا رفعت صورة)</div>
-      <textarea id="cotRaw" class="mono" placeholder="الصق هون أرقام المراكز: Non-Commercial Long/Short، Commercial Long/Short، التغير الأسبوعي..."></textarea>
-    </div>
-    <div class="card">
-      <div class="card-title">📰 أخبار وعناوين الأسبوع (اختياري إذا رفعت صورة)</div>
-      <textarea id="newsRaw" placeholder="الصق هون أهم العناوين الاقتصادية: قرارات الفائدة، CPI، NFP، تصريحات الفيدرالي..."></textarea>
-    </div>
-  </div>
-
   <div class="error" id="errorBox" style="display:none;"></div>
-
-  <div class="analyze-wrap">
-    <button id="analyzeBtn">
-      <span id="btnIcon">📟</span>
-      <span id="btnLabel">حلّل الوضع الأسبوعي</span>
-    </button>
-  </div>
 
   <!-- Result -->
   <div class="card" id="resultCard">
@@ -237,6 +192,10 @@
     <div class="grid2">
       <div class="split"><div class="split-title mono">قراءة COT</div><div class="split-body" id="resCot"></div></div>
       <div class="split"><div class="split-title mono">قراءة الأخبار</div><div class="split-body" id="resNews"></div></div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="split"><div class="split-title mono">التقويم الاقتصادي القادم</div><div class="split-body" id="resCalendar"></div></div>
+      <div class="split"><div class="split-title mono">التحليل الفني الكلاسيكي</div><div class="split-body" id="resTechnical"></div></div>
     </div>
     <div id="driversWrap" style="margin-top:16px;">
       <div class="split-title mono">أهم المحركات</div>
@@ -384,7 +343,6 @@ function authHeaders() {
 
 initAuth();
 const HISTORY_KEY = "gold-cot-history";
-let images = []; // {id, name, mediaType, data, preview}
 let loading = false;
 
 function dirColor(dir) {
@@ -426,13 +384,7 @@ function drawGauge(score, dir) {
   `;
 }
 
-// ---------- Guide / History toggles ----------
-document.getElementById("guideToggle").onclick = () => {
-  const body = document.getElementById("guideBody");
-  const open = body.style.display !== "none";
-  body.style.display = open ? "none" : "block";
-  document.getElementById("guideArrow").textContent = open ? "▾" : "▴";
-};
+// ---------- History toggle ----------
 document.getElementById("histToggle").onclick = () => {
   const body = document.getElementById("histBody");
   const open = body.style.display !== "none";
@@ -441,56 +393,21 @@ document.getElementById("histToggle").onclick = () => {
   if (!open) renderHistory();
 };
 
-// ---------- Images ----------
-function addFiles(fileList) {
-  Array.from(fileList).forEach((file) => {
-    if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result);
-      const match = result.match(/^data:(.*?);base64,(.*)$/);
-      if (!match) return;
-      images.push({ id: Date.now()+"-"+Math.random(), name:file.name, mediaType:match[1], data:match[2], preview:result });
-      renderImages();
-    };
-    reader.readAsDataURL(file);
-  });
-}
-function renderImages() {
-  const wrap = document.getElementById("imgPreview");
-  wrap.innerHTML = "";
-  images.forEach((img) => {
-    const div = document.createElement("div");
-    div.className = "thumb";
-    div.innerHTML = `<img src="${img.preview}" alt="${img.name}"/><button data-id="${img.id}">×</button>`;
-    div.querySelector("button").onclick = () => { images = images.filter(i=>i.id!==img.id); renderImages(); };
-    wrap.appendChild(div);
-  });
-}
-document.getElementById("fileInput").onchange = (e) => { addFiles(e.target.files); e.target.value=""; };
-window.addEventListener("paste", (e) => {
-  const items = e.clipboardData && e.clipboardData.items;
-  if (!items) return;
-  const files = [];
-  for (let i=0;i<items.length;i++){
-    if (items[i].type && items[i].type.startsWith("image/")) {
-      const f = items[i].getAsFile();
-      if (f) files.push(f);
-    }
-  }
-  if (files.length) { e.preventDefault(); addFiles(files); }
-});
-
 // ---------- Auto analyze ----------
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
-  const { price, cotRows, headlines, calendar } = sources;
+  const { price, cotRows, headlines, calendar, technical } = sources;
   let html = "";
   html += `<div class="src-line"><b>السعر المستخدم:</b> ${price ? price.price + " $ (تحديث: " + price.updatedAtReadable + ")" : "تعذر الجلب"}</div>`;
   html += `<div class="src-line"><b>عدد صفوف COT المستلمة:</b> ${cotRows ? cotRows.length : 0}</div>`;
   html += `<div class="src-line"><b>عدد العناوين المستلمة:</b> ${headlines ? headlines.length : 0}</div>`;
   html += `<div class="src-line"><b>أحداث التقويم الاقتصادي القادمة (USD):</b> ${calendar ? calendar.length : 0}</div>`;
+  if (technical) {
+    html += `<div class="src-line"><b>المؤشرات الفنية:</b> RSI ${technical.rsi14?.toFixed(1) ?? "-"} · SMA20 ${technical.sma20?.toFixed(2) ?? "-"} · SMA50 ${technical.sma50?.toFixed(2) ?? "-"} (${technical.dataPoints} يوم بيانات${technical.fromCache ? "، مخزّنة مؤقتاً" : ""})</div>`;
+  } else {
+    html += `<div class="src-line"><b>المؤشرات الفنية:</b> تعذر الحساب حالياً</div>`;
+  }
   if (headlines && headlines.length) {
     html += `<div class="src-line" style="margin-top:6px;"><b>أهم العناوين:</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
   }
@@ -547,117 +464,12 @@ async function autoAnalyze() {
 }
 document.getElementById("autoBtn").onclick = autoAnalyze;
 
-// ---------- Analyze ----------
+// ---------- Error helper ----------
 function showError(msg) {
   const box = document.getElementById("errorBox");
   box.textContent = msg;
   box.style.display = msg ? "block" : "none";
 }
-
-async function analyze() {
-  showError("");
-  const cotRaw = document.getElementById("cotRaw").value;
-  const newsRaw = document.getElementById("newsRaw").value;
-
-  if (!cotRaw.trim() && !newsRaw.trim() && images.length === 0) {
-    showError("لازم تدخل بيانات COT أو أخبار، أو ترفع صورة واحدة على الأقل.");
-    return;
-  }
-  if (images.length === 0) {
-    showError("لازم ترفق صورة شارت فيها السعر الحالي للذهب (أو الصقها Ctrl+V) عشان مستويات الدعم/المقاومة تكون دقيقة.");
-    return;
-  }
-
-  loading = true;
-  const btn = document.getElementById("analyzeBtn");
-  btn.disabled = true;
-  document.getElementById("btnIcon").innerHTML = '<span class="spin">⏳</span>';
-  document.getElementById("btnLabel").textContent = "جارٍ التحليل...";
-
-  const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD) وتقارير الالتزامات التجارية (COT) الصادرة عن CFTC.
-مهمتك: تحليل بيانات COT المُدخلة مع الأخبار الاقتصادية المُدخلة، وإعطاء توقع اتجاه أسبوعي للذهب.
-
-مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
-- summary: 3 إلى 4 جمل، تشرح الخلاصة والسبب الرئيسي وراء التوقع بوضوح.
-- cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز ودلالتها.
-- news_reading: 2 إلى 3 جمل تربط عناوين محددة بتأثيرها المتوقع على الذهب.
-- key_drivers: 3 إلى 4 عناصر، كل عنصر جملة كاملة واضحة (حتى 18 كلمة).
-- key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330".
-- risks: 2 إلى 3 عناصر، كل عنصر جملة واضحة (حتى 18 كلمة).
-
-مهم جداً بخصوص السعر: السعر الحالي الحقيقي للذهب سيظهر داخل صورة شارت مرفقة من المستخدم. افحص الصورة واستخرج منها السعر الحالي بدقة، واعتمد عليه حصراً كنقطة انطلاق لحساب أي مستويات دعم/مقاومة. ممنوع الاعتماد على أي سعر ذهب "تتذكره" من بيانات تدريبك السابقة لأنها قد تكون قديمة جداً وغير صحيحة إطلاقاً اليوم. إذا لم تستطع تمييز سعر واضح من الصورة، اذكر ذلك صراحة في summary بدل اختلاق سعر.
-
-أجب حصراً بصيغة JSON صالحة ومكتملة (تأكد من إغلاق كل الأقواس والاقتباسات) بدون أي نص إضافي قبله أو بعده وبدون Markdown، بالمفاتيح التالية بالضبط:
-{
-  "trend": "صعودي" | "هبوطي" | "محايد",
-  "score": رقم من -100 إلى 100,
-  "confidence": رقم من 0 إلى 100,
-  "summary": "...",
-  "cot_reading": "...",
-  "news_reading": "...",
-  "key_drivers": ["...", "...", "..."],
-  "key_levels": {"support": ["..."], "resistance": ["..."]},
-  "risks": ["...", "..."]
-}
-إذا كانت البيانات ناقصة لاستنتاج مستويات رقمية، اترك مصفوفة key_levels فارغة بدل اختلاق أرقام. الأولوية القصوى هي إرجاع JSON صالح ومكتمل حتى لو كان مختصراً جداً.`;
-
-  const userMsg = `افحص الصورة/الصور المرفقة واستخرج منها السعر الحالي للذهب XAUUSD (غالباً من شارت السعر)، بالإضافة لأي بيانات COT أو أخبار ظاهرة فيها. اعتمد على السعر المستخرج من الصورة حصراً كمرجع حقيقي حالي.
-
-بيانات تقرير COT (نصياً إن وجد):
-"""
-${cotRaw || "لم يتم إدخال بيانات COT نصياً (تحقق من الصور)."}
-"""
-
-الأخبار (نصياً إن وجدت):
-"""
-${newsRaw || "لم يتم إدخال أخبار نصياً (تحقق من الصور)."}
-"""
-
-تم إرفاق ${images.length} صورة/صور بعد هذه الرسالة.
-
-حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
-
-  const content = [{ type:"text", text:userMsg }];
-  images.forEach(img => content.push({ type:"image", source:{ type:"base64", media_type: img.mediaType, data: img.data } }));
-
-  try {
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      body: JSON.stringify({ system: sys, content }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "خطأ من الخادم");
-
-    const textBlock = (data.content || []).find(b => b.type === "text");
-    if (!textBlock) throw new Error("لم يرجع النموذج أي نص.");
-    const clean = textBlock.text.replace(/```json|```/g, "").trim();
-
-    let parsed;
-    try { parsed = JSON.parse(clean); }
-    catch (e) {
-      parsed = {
-        trend:"محايد", score:0, confidence:0,
-        summary:"ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
-        cot_reading: clean.slice(0,600) || "لا يوجد نص.",
-        news_reading:"", key_drivers:[], key_levels:{support:[],resistance:[]},
-        risks:["جرّب اختصار النص المُدخل وأعد المحاولة."],
-      };
-    }
-
-    const entry = { ts: Date.now(), date: new Date().toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"}), ...parsed, outcome:null };
-    showResult(entry);
-    saveHistory(entry);
-  } catch (e) {
-    showError("صار خطأ أثناء التحليل: " + (e.message || ""));
-  } finally {
-    loading = false;
-    btn.disabled = false;
-    document.getElementById("btnIcon").textContent = "📟";
-    document.getElementById("btnLabel").textContent = "حلّل الوضع الأسبوعي";
-  }
-}
-document.getElementById("analyzeBtn").onclick = analyze;
 
 function showResult(r) {
   document.getElementById("resultCard").style.display = "block";
@@ -670,6 +482,8 @@ function showResult(r) {
   document.getElementById("resSummary").textContent = r.summary;
   document.getElementById("resCot").textContent = r.cot_reading || "";
   document.getElementById("resNews").textContent = r.news_reading || "";
+  document.getElementById("resCalendar").textContent = r.calendar_reading || "";
+  document.getElementById("resTechnical").textContent = r.technical_reading || "";
   drawGauge(r.score, r.trend);
 
   const driversList = document.getElementById("driversList");
