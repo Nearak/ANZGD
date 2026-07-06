@@ -146,7 +146,12 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
       body: JSON.stringify({
         contents: [{ parts: [{ text: userMsg }] }],
         systemInstruction: { parts: [{ text: sys }] },
-        generationConfig: { maxOutputTokens: 3000, temperature: 0.4, responseMimeType: "application/json" },
+        generationConfig: {
+          maxOutputTokens: 3000,
+          temperature: 0.4,
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 
