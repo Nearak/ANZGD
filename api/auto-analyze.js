@@ -146,7 +146,7 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
       body: JSON.stringify({
         contents: [{ parts: [{ text: userMsg }] }],
         systemInstruction: { parts: [{ text: sys }] },
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.4 },
+        generationConfig: { maxOutputTokens: 3000, temperature: 0.4, responseMimeType: "application/json" },
       }),
     });
 
@@ -158,8 +158,16 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
     }
 
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+    const finishReason = data?.candidates?.[0]?.finishReason;
     if (!text) {
-      return res.status(502).json({ error: "لم يرجع Gemini أي نص (finishReason: " + (data?.candidates?.[0]?.finishReason || "غير معروف") + ")." });
+      return res.status(502).json({ error: "لم يرجع Gemini أي نص (finishReason: " + (finishReason || "غير معروف") + ")." });
+    }
+    if (finishReason === "MAX_TOKENS") {
+      return res.status(200).json({
+        content: [{ type: "text", text }],
+        _sources: { price: priceInfo, cotRows, headlines },
+        _truncated: true,
+      });
     }
 
     // نرجع بنفس شكل رد Anthropic القديم + البيانات الخام للشفافية بالواجهة
