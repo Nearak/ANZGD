@@ -50,11 +50,28 @@ async function fetchRss(url, limit) {
 }
 
 async function fetchNews() {
-  const [a, b] = await Promise.all([
-    fetchRss("https://www.forexlive.com/feed/news", 8),
-    fetchRss("https://news.goldseek.com/newsRSS.xml", 6),
-  ]);
-  return [...new Set([...a, ...b])].slice(0, 12);
+  const queries = [
+    '"gold price" OR XAUUSD OR "gold prices"',
+    '"Federal Reserve" OR "Fed rate" OR "interest rate" gold',
+  ];
+  const results = await Promise.all(
+    queries.map((q) =>
+      fetchRss(
+        `https://news.google.com/rss/search?q=${encodeURIComponent(q)}+when:3d&hl=en-US&gl=US&ceid=US:en`,
+        8
+      )
+    )
+  );
+  let combined = [...new Set(results.flat())];
+  if (combined.length < 4) {
+    // احتياطي لو Google News ما رجع شي كافي
+    const [a, b] = await Promise.all([
+      fetchRss("https://www.forexlive.com/feed/news", 6),
+      fetchRss("https://news.goldseek.com/newsRSS.xml", 6),
+    ]);
+    combined = [...new Set([...combined, ...a, ...b])];
+  }
+  return combined.slice(0, 14);
 }
 
 export default async function handler(req, res) {
@@ -80,13 +97,13 @@ export default async function handler(req, res) {
     const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD) وتقارير الالتزامات التجارية (COT) الصادرة عن CFTC.
 البيانات المُعطاة لك بالأسفل تم جلبها تلقائياً قبل لحظات من مصادر حية (سعر لحظي، بيانات COT رسمية من CFTC، وعناوين أخبار حديثة) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
 
-مهم جداً: كن مختصراً جداً بكل حقل نصي لأن المساحة المتاحة للرد محدودة، والتزم حرفياً بالحدود التالية:
-- summary: جملتان كحد أقصى.
-- cot_reading: جملة إلى جملتان.
-- news_reading: جملة إلى جملتان.
-- key_drivers: 3 عناصر كحد أقصى، كل عنصر أقل من 12 كلمة.
+مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
+- summary: 3 إلى 4 جمل، تشرح الخلاصة والسبب الرئيسي وراء التوقع بوضوح.
+- cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز (net positioning، التغير الأسبوعي) ودلالتها.
+- news_reading: 2 إلى 3 جمل تربط عناوين محددة (اذكرها) بتأثيرها المتوقع على الذهب. تجاهل تماماً أي عنوان لا علاقة له بالاقتصاد الكلي أو الذهب أو الدولار أو الفائدة (مثل أخبار شركات تقنية أو صفقات غير مرتبطة).
+- key_drivers: 3 إلى 4 عناصر، كل عنصر جملة كاملة واضحة (حتى 18 كلمة).
 - key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً.
-- risks: عنصران كحد أقصى، كل عنصر أقل من 12 كلمة.
+- risks: 2 إلى 3 عناصر، كل عنصر جملة واضحة (حتى 18 كلمة).
 
 إذا كانت بيانات COT أو الأخبار فارغة أو غير متاحة (تعذر الجلب)، اذكر ذلك بوضوح ضمن الحقل النصي المناسب بدل تجاهل الأمر أو اختلاق بيانات.
 
@@ -129,7 +146,7 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
       body: JSON.stringify({
         contents: [{ parts: [{ text: userMsg }] }],
         systemInstruction: { parts: [{ text: sys }] },
-        generationConfig: { maxOutputTokens: 1200, temperature: 0.4 },
+        generationConfig: { maxOutputTokens: 2000, temperature: 0.4 },
       }),
     });
 
