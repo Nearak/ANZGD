@@ -1,6 +1,22 @@
 // Vercel Serverless Function
-// يستقبل { system, content } من الواجهة الأمامية، وينادي Anthropic API
-// بمفتاح سري مخزّن كمتغير بيئة (Environment Variable) بعيد عن أي زائر للموقع.
+// يستقبل { system, content } من الواجهة الأمامية (بصيغة أنماط Anthropic: text/image)
+// ويحوّلها وينادي Google Gemini API المجاني، ويرجع الرد بنفس شكل رد Anthropic
+// حتى ما نحتاج نغيّر شي بالواجهة الأمامية (index.html).
+
+function toGeminiParts(content) {
+  return content.map((block) => {
+    if (block.type === "text") return { text: block.text };
+    if (block.type === "image") {
+      return {
+        inline_data: {
+          mime_type: block.source.media_type,
+          data: block.source.data,
+        },
+      };
+    }
+    return null;
+  }).filter(Boolean);
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -8,10 +24,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "الطريقة غير مسموحة، استخدم POST." });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
-      error: "ANTHROPIC_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
+      error: "GEMINI_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
     });
   }
 
@@ -21,18 +37,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "الطلب ناقص (content مفقود)." });
     }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const parts = toGeminiParts(content);
+    const model = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 1200,
-        system: system || undefined,
-        messages: [{ role: "user", content }],
+        contents: [{ parts }],
+        systemInstruction: system ? { parts: [{ text: system }] } : undefined,
+        generationConfig: { maxOutputTokens: 1200, temperature: 0.4 },
       }),
     });
 
@@ -40,11 +55,17 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Anthropic API.",
+        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Gemini API.",
       });
     }
 
-    return res.status(200).json(data);
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+    if (!text) {
+      return res.status(502).json({ error: "لم يرجع Gemini أي نص (ربما تم حظر المحتوى - finishReason: " + (data?.candidates?.[0]?.finishReason || "غير معروف") + ")." });
+    }
+
+    // نرجع بنفس شكل رد Anthropic القديم حتى تشتغل الواجهة الأمامية بدون أي تعديل
+    return res.status(200).json({ content: [{ type: "text", text }] });
   } catch (err) {
     return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
   }
