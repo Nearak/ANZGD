@@ -2,6 +2,8 @@
 // يجيب تلقائياً: سعر الذهب اللحظي + أحدث بيانات COT + أهم عناوين الأخبار
 // من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Google Gemini (مجاني) للتحليل.
 
+import { verifyActiveUser } from "./_lib/auth.js";
+
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
 
 async function fetchGoldPrice() {
@@ -99,6 +101,11 @@ export default async function handler(req, res) {
     return res.status(500).json({
       error: "GEMINI_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
     });
+  }
+
+  const auth = await verifyActiveUser(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
   }
 
   try {
