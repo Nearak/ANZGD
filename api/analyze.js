@@ -3,6 +3,8 @@
 // ويحوّلها وينادي Google Gemini API المجاني، ويرجع الرد بنفس شكل رد Anthropic
 // حتى ما نحتاج نغيّر شي بالواجهة الأمامية (index.html).
 
+import { verifyActiveUser } from "./_lib/auth.js";
+
 function toGeminiParts(content) {
   return content.map((block) => {
     if (block.type === "text") return { text: block.text };
@@ -29,6 +31,11 @@ export default async function handler(req, res) {
     return res.status(500).json({
       error: "GEMINI_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
     });
+  }
+
+  const auth = await verifyActiveUser(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
   }
 
   try {
