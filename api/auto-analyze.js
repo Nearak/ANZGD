@@ -3,6 +3,7 @@
 // من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Google Gemini (مجاني) للتحليل.
 
 import { verifyActiveUser } from "./_lib/auth.js";
+import { getTechnicalSnapshot } from "./_lib/priceHistory.js";
 
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
 
@@ -69,6 +70,7 @@ async function fetchNews() {
   const queries = [
     '"gold price" OR XAUUSD OR "gold prices"',
     '"Federal Reserve" OR "Fed rate" OR "interest rate" gold',
+    '"CPI" OR "Non-Farm Payrolls" OR "PCE inflation" OR "dollar index"',
   ];
   const results = await Promise.all(
     queries.map((q) =>
@@ -109,27 +111,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [priceInfo, cotRows, headlines, calendar] = await Promise.all([
+    const [priceInfo, cotRows, headlines, calendar, technical] = await Promise.all([
       fetchGoldPrice(),
       fetchCotRows(),
       fetchNews(),
       fetchEconomicCalendar(),
+      getTechnicalSnapshot(),
     ]);
 
-    const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD) وتقارير الالتزامات التجارية (COT) الصادرة عن CFTC.
-البيانات المُعطاة لك بالأسفل تم جلبها تلقائياً قبل لحظات من مصادر حية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، وتقويم اقتصادي أسبوعي للأحداث القادمة) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+    const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD)، خبير بتقارير COT الصادرة عن CFTC وبالتحليل الفني الكلاسيكي.
+البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، ومؤشرات فنية كلاسيكية محسوبة من بيانات سعرية تاريخية فعلية) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
 
-مهم بخصوص التقويم الاقتصادي: هذي أحداث لسا ما صارت (مستقبلية خلال هذا الأسبوع). استخدمها لتحديد نقاط تقلب متوقعة قريباً (مثلاً: صدور بيانات تضخم أو قرار فائدة يوم معين) واذكرها صراحة ضمن key_drivers أو risks حسب أهميتها، مع ذكر اسم الحدث وتوقيته إن أمكن.
+منهجية التحليل الإلزامية — حلل 4 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
+1. **COT (تمركز المؤسسات):** هل هناك تمركز مفرط لدى المضاربين غير التجاريين؟ هل التغير الأسبوعي يدعم استمرار الاتجاه أم يشير لاحتمال انعكاس؟
+2. **الأخبار والسياسة النقدية:** ماذا تعني العناوين المتاحة تحديداً (اذكرها) بالنسبة لتوقعات الفائدة وقوة الدولار؟
+3. **التقويم الاقتصادي القادم:** ما هي أقرب الأحداث عالية الأهمية القادمة، ومتى، وما تأثيرها المحتمل؟
+4. **التحليل الفني الكلاسيكي:** ماذا تقول المؤشرات المحسوبة (RSI، MACD، المتوسطات المتحركة، نطاقات بولينجر) عن الزخم الحالي؟ هل هناك تشبع شرائي/بيعي، تقاطعات، أو اختراق نطاقات؟
+
+بعد تحليل الأربعة، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور الأربعة متفقة مع بعضها أم متعارضة؟ أي محور له الوزن الأكبر بقرارك ولماذا؟
 
 مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
-- summary: 3 إلى 4 جمل، تشرح الخلاصة والسبب الرئيسي وراء التوقع بوضوح.
-- cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز (net positioning، التغير الأسبوعي) ودلالتها.
-- news_reading: 2 إلى 3 جمل تربط عناوين محددة (اذكرها) بتأثيرها المتوقع على الذهب. تجاهل تماماً أي عنوان لا علاقة له بالاقتصاد الكلي أو الذهب أو الدولار أو الفائدة (مثل أخبار شركات تقنية أو صفقات غير مرتبطة).
+- summary: 4 إلى 5 جمل، تلخص التوافق/التعارض بين المحاور الأربعة والسبب الرئيسي وراء القرار النهائي.
+- cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز ودلالتها.
+- news_reading: 2 إلى 3 جمل تربط عناوين محددة بتأثيرها المتوقع على الذهب. تجاهل تماماً أي عنوان لا علاقة له بالاقتصاد الكلي أو الذهب أو الدولار أو الفائدة.
+- calendar_reading: 1 إلى 2 جملة عن أقرب حدث/أحداث عالية الأهمية القادمة وتوقيتها المحتمل.
+- technical_reading: 2 إلى 3 جمل تفسر تحديداً قراءات RSI وMACD والمتوسطات المتحركة وموقع السعر ضمن نطاقات بولينجر.
 - key_drivers: 3 إلى 4 عناصر، كل عنصر جملة كاملة واضحة (حتى 18 كلمة).
-- key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً.
+- key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً (وبالاستفادة من مستويات SMA/Bollinger إن كانت منطقية كدعم/مقاومة).
 - risks: 2 إلى 3 عناصر، كل عنصر جملة واضحة (حتى 18 كلمة).
 
-إذا كانت بيانات COT أو الأخبار فارغة أو غير متاحة (تعذر الجلب)، اذكر ذلك بوضوح ضمن الحقل النصي المناسب بدل تجاهل الأمر أو اختلاق بيانات.
+إذا كانت أي بيانات فارغة أو غير متاحة (تعذر الجلب/الحساب)، اذكر ذلك بوضوح ضمن الحقل النصي المناسب بدل تجاهل الأمر أو اختلاق بيانات.
 
 أجب حصراً بصيغة JSON صالحة ومكتملة (تأكد من إغلاق كل الأقواس والاقتباسات) بدون أي نص إضافي قبله أو بعده وبدون Markdown، بالمفاتيح التالية بالضبط:
 {
@@ -139,6 +150,8 @@ export default async function handler(req, res) {
   "summary": "...",
   "cot_reading": "...",
   "news_reading": "...",
+  "calendar_reading": "...",
+  "technical_reading": "...",
   "key_drivers": ["...", "...", "..."],
   "key_levels": {"support": ["..."], "resistance": ["..."]},
   "risks": ["...", "..."]
@@ -164,6 +177,16 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
 ${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "تعذر جلب التقويم الاقتصادي حالياً من المصدر الحي."}
 """
 
+المؤشرات الفنية الكلاسيكية — محسوبة فعلياً (رياضياً) من بيانات سعرية يومية حقيقية (آخر ${technical?.dataPoints || "؟"} يوم تقريباً):
+"""
+${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابات: ${technical.lastClose.toFixed(2)}
+- المتوسط المتحرك البسيط 20 يوم (SMA20): ${technical.sma20 != null ? technical.sma20.toFixed(2) : "غير كافٍ من البيانات"}
+- المتوسط المتحرك البسيط 50 يوم (SMA50): ${technical.sma50 != null ? technical.sma50.toFixed(2) : "غير كافٍ من البيانات"}
+- مؤشر القوة النسبية RSI(14): ${technical.rsi14 != null ? technical.rsi14.toFixed(1) : "غير كافٍ من البيانات"}
+- MACD(12,26,9): ${technical.macd ? `خط MACD = ${technical.macd.macd.toFixed(2)}، خط الإشارة = ${technical.macd.signal.toFixed(2)}، الهيستوجرام = ${technical.macd.histogram.toFixed(2)}` : "غير كافٍ من البيانات"}
+- نطاقات بولينجر (20، 2 انحراف معياري): علوي = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}، أوسط = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}، سفلي = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "تعذر حساب المؤشرات الفنية حالياً (بيانات تاريخية غير متوفرة حالياً)."}
+"""
+
 حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
 
     const model = "gemini-2.5-flash";
@@ -176,7 +199,7 @@ ${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "تعذر ج
         contents: [{ parts: [{ text: userMsg }] }],
         systemInstruction: { parts: [{ text: sys }] },
         generationConfig: {
-          maxOutputTokens: 3000,
+          maxOutputTokens: 4096,
           temperature: 0.4,
           responseMimeType: "application/json",
           thinkingConfig: { thinkingBudget: 0 },
@@ -199,7 +222,7 @@ ${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "تعذر ج
     if (finishReason === "MAX_TOKENS") {
       return res.status(200).json({
         content: [{ type: "text", text }],
-        _sources: { price: priceInfo, cotRows, headlines, calendar },
+        _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
         _truncated: true,
       });
     }
@@ -207,7 +230,7 @@ ${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "تعذر ج
     // نرجع بنفس شكل رد Anthropic القديم + البيانات الخام للشفافية بالواجهة
     return res.status(200).json({
       content: [{ type: "text", text }],
-      _sources: { price: priceInfo, cotRows, headlines, calendar },
+      _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
