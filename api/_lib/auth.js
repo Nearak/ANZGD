@@ -32,18 +32,25 @@ export async function verifyActiveUser(req) {
       return { ok: false, status: 401, error: "تعذر التعرف على المستخدم." };
     }
 
-    // 2. تحقق من حالة التفعيل بجدول profiles (باستخدام مفتاح الخدمة السري لتجاوز RLS)
+    // 2. تحقق من حالة التفعيل وتاريخ الانتهاء بجدول profiles
     const profRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=is_active`,
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=is_active,subscription_expires_at`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
     if (!profRes.ok) {
       return { ok: false, status: 500, error: "تعذر التحقق من حالة الحساب." };
     }
     const rows = await profRes.json();
-    const isActive = rows?.[0]?.is_active === true;
+    const profile = rows?.[0];
+    const isActive = profile?.is_active === true;
+    const expiresAt = profile?.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
+    const isExpired = expiresAt ? expiresAt.getTime() <= Date.now() : false;
+
     if (!isActive) {
       return { ok: false, status: 403, error: "حسابك غير مفعل بعد. تواصل معنا لتفعيله بعد إتمام الدفع." };
+    }
+    if (isExpired) {
+      return { ok: false, status: 403, error: "انتهت مدة اشتراكك. تواصل معنا لتجديده." };
     }
 
     return { ok: true, userId: user.id, email: user.email };
