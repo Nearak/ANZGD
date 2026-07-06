@@ -110,7 +110,7 @@
   <!-- Auto analyze -->
   <div class="auto-card">
     <div class="auto-title">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار بنفسه، وبيحلل مباشرة — بدون ما ترفع أو تكتب أي شي.</div>
+    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي القادم بنفسه، وبيحلل مباشرة — بدون ما ترفع أو تكتب أي شي.</div>
     <button id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel">حلّل الآن تلقائياً</span>
@@ -320,13 +320,17 @@ window.addEventListener("paste", (e) => {
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
-  const { price, cotRows, headlines } = sources;
+  const { price, cotRows, headlines, calendar } = sources;
   let html = "";
   html += `<div class="src-line"><b>السعر المستخدم:</b> ${price ? price.price + " $ (تحديث: " + price.updatedAtReadable + ")" : "تعذر الجلب"}</div>`;
   html += `<div class="src-line"><b>عدد صفوف COT المستلمة:</b> ${cotRows ? cotRows.length : 0}</div>`;
   html += `<div class="src-line"><b>عدد العناوين المستلمة:</b> ${headlines ? headlines.length : 0}</div>`;
+  html += `<div class="src-line"><b>أحداث التقويم الاقتصادي القادمة (USD):</b> ${calendar ? calendar.length : 0}</div>`;
   if (headlines && headlines.length) {
     html += `<div class="src-line" style="margin-top:6px;"><b>أهم العناوين:</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
+  }
+  if (calendar && calendar.length) {
+    html += `<div class="src-line" style="margin-top:6px;"><b>أهم الأحداث القادمة:</b><br>${calendar.slice(0,6).map(c=>"• "+(c.title||"")+" — "+(c.date||"")+" ("+(c.impact||"")+")").join("<br>")}</div>`;
   }
   box.innerHTML = html;
   box.style.display = "block";
