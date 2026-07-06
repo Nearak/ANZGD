@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لوحة تحكم — مكتب تحليل الذهب</title>
+<style>
+  :root {
+    --bg: #0B0D10; --panel: #12151A; --panel2: #171B21; --line: #242A32;
+    --gold: #C9A227; --text: #EDE9DF; --text-dim: #8E93A0; --bull: #3FA789; --bear: #D1584C;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, sans-serif; padding:28px 16px; }
+  .wrap { max-width:900px; margin:0 auto; }
+  h1 { font-family:Georgia, serif; font-size:20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+  input { background:var(--panel2); border:1px solid var(--line); border-radius:6px; color:var(--text); padding:9px; font-size:13px; outline:none; }
+  button { background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:right; padding:8px; border-bottom:1px solid var(--line); }
+  th { color:var(--text-dim); font-weight:normal; font-size:12px; }
+  .badge { padding:2px 8px; border-radius:4px; font-size:11px; }
+  .badge.active { background:rgba(63,167,137,0.15); color:var(--bull); }
+  .badge.inactive { background:rgba(209,88,76,0.15); color:var(--bear); }
+  .toggle-btn { padding:5px 10px; font-size:12px; border-radius:5px; cursor:pointer; }
+  .toggle-btn.on { background:var(--bear); color:#fff; }
+  .toggle-btn.off { background:var(--bull); color:#fff; }
+  .notes-input { width:150px; font-size:12px; }
+  .err { color:var(--bear); font-size:13px; }
+  #loginBox { max-width:340px; margin:80px auto; text-align:center; }
+  #loginBox input { width:100%; margin-bottom:10px; }
+  #loginBox button { width:100%; }
+</style>
+</head>
+<body>
+
+<div id="loginBox">
+  <h1>🔐 دخول لوحة التحكم</h1>
+  <input type="password" id="secretInput" placeholder="كلمة السر الإدارية" />
+  <button id="loginBtn">دخول</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div class="wrap" id="dashboard" style="display:none;">
+  <h1>لوحة تحكم المشتركين</h1>
+  <div class="card">
+    <button id="refreshBtn">🔄 تحديث القائمة</button>
+    <span id="countLabel" style="margin-inline-start:12px; color:var(--text-dim); font-size:13px;"></span>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>البريد</th><th>الحالة</th><th>تاريخ التسجيل</th><th>ملاحظات</th><th>إجراء</th></tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let ADMIN_SECRET = "";
+
+function headers() {
+  return { "Content-Type": "application/json", "x-admin-secret": ADMIN_SECRET };
+}
+
+document.getElementById("loginBtn").onclick = async () => {
+  ADMIN_SECRET = document.getElementById("secretInput").value.trim();
+  const ok = await loadUsers();
+  if (ok) {
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    sessionStorage.setItem("admin_secret", ADMIN_SECRET);
+  }
+};
+
+document.getElementById("refreshBtn").onclick = loadUsers;
+
+async function loadUsers() {
+  document.getElementById("loginErr").textContent = "";
+  try {
+    const r = await fetch("/api/admin-list-users", { headers: headers() });
+    const data = await r.json();
+    if (!r.ok) { document.getElementById("loginErr").textContent = data.error || "خطأ"; return false; }
+    renderUsers(data.users || []);
+    return true;
+  } catch (e) {
+    document.getElementById("loginErr").textContent = "خطأ بالاتصال.";
+    return false;
+  }
+}
+
+function renderUsers(users) {
+  document.getElementById("countLabel").textContent = `${users.length} مستخدم`;
+  const body = document.getElementById("usersBody");
+  body.innerHTML = "";
+  users.forEach(u => {
+    const tr = document.createElement("tr");
+    const date = u.created_at ? new Date(u.created_at).toLocaleDateString("ar-EG") : "";
+    tr.innerHTML = `
+      <td>${u.email || ""}</td>
+      <td><span class="badge ${u.is_active ? "active" : "inactive"}">${u.is_active ? "مفعّل" : "غير مفعّل"}</span></td>
+      <td>${date}</td>
+      <td><input class="notes-input" data-id="${u.id}" value="${u.notes || ""}" placeholder="ملاحظة (مثلاً: دفع InstaPay)" /></td>
+      <td><button class="toggle-btn ${u.is_active ? "on" : "off"}" data-id="${u.id}" data-active="${u.is_active}">${u.is_active ? "تعطيل" : "تفعيل"}</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      const newActive = btn.dataset.active !== "true";
+      const notesInput = body.querySelector(`.notes-input[data-id="${id}"]`);
+      await fetch("/api/admin-set-active", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ id, is_active: newActive, notes: notesInput.value }),
+      });
+      loadUsers();
+    };
+  });
+
+  body.querySelectorAll(".notes-input").forEach(inp => {
+    inp.onblur = async () => {
+      await fetch("/api/admin-set-active", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ id: inp.dataset.id, notes: inp.value }),
+      });
+    };
+  });
+}
+
+// استرجاع الجلسة من هالمتصفح لو موجودة (بدون تخزين دائم)
+const saved = sessionStorage.getItem("admin_secret");
+if (saved) {
+  ADMIN_SECRET = saved;
+  loadUsers().then(ok => {
+    if (ok) {
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+    }
+  });
+}
+</script>
+</body>
+</html>
