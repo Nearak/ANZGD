@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "غير مصرح — كلمة السر الإدارية غير صحيحة." });
   }
 
-  const { id, is_active, notes } = req.body || {};
+  const { id, is_active, notes, duration_days, extend_from_current } = req.body || {};
   if (!id) {
     return res.status(400).json({ error: "id مفقود." });
   }
@@ -22,10 +22,28 @@ export default async function handler(req, res) {
   }
 
   const body = {};
-  if (typeof is_active === "boolean") body.is_active = is_active;
   if (typeof notes === "string") body.notes = notes;
 
   try {
+    if (typeof duration_days === "number" && duration_days > 0) {
+      // تفعيل/تجديد بمدة محددة: نحسب تاريخ الانتهاء
+      let baseTime = Date.now();
+      if (extend_from_current) {
+        const curRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}&select=subscription_expires_at`,
+          { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+        );
+        const curRows = await curRes.json();
+        const curExpiry = curRows?.[0]?.subscription_expires_at ? new Date(curRows[0].subscription_expires_at).getTime() : 0;
+        if (curExpiry > baseTime) baseTime = curExpiry; // نمدد من تاريخ الانتهاء الحالي لو لسا ما خلص
+      }
+      body.subscription_expires_at = new Date(baseTime + duration_days * 24 * 60 * 60 * 1000).toISOString();
+      body.is_active = true;
+    } else if (typeof is_active === "boolean") {
+      body.is_active = is_active;
+      if (is_active === false) body.subscription_expires_at = null;
+    }
+
     const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${id}`, {
       method: "PATCH",
       headers: {
