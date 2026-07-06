@@ -57,6 +57,17 @@
 
   .error { color:var(--bear); font-size:13px; margin-top:12px; text-align:center; }
 
+  .auto-card { background:linear-gradient(180deg, #171B21, #12151A); border:1px solid var(--gold-soft); border-radius:10px; padding:20px; margin-bottom:20px; text-align:center; }
+  .auto-title { font-family:Georgia, serif; font-size:17px; margin-bottom:4px; }
+  .auto-sub { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+  #autoBtn { background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:14px 36px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  #autoBtn:disabled { background:var(--gold-soft); cursor:default; }
+  .sources-box { margin-top:16px; text-align:right; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--text-dim); display:none; }
+  .sources-box b { color:var(--text); }
+  .sources-box .src-line { margin-bottom:4px; }
+  .divider-or { display:flex; align-items:center; gap:10px; color:var(--text-dim); font-size:12px; margin:22px 0; }
+  .divider-or::before, .divider-or::after { content:""; flex:1; height:1px; background:var(--line); }
+
   .analyze-wrap { display:flex; justify-content:center; margin-top:18px; }
   #analyzeBtn { background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:12px 32px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; }
   #analyzeBtn:disabled { background:var(--gold-soft); cursor:default; }
@@ -95,6 +106,19 @@
       <div class="subtitle mono">XAUUSD · COT INTELLIGENCE · WEEKLY OUTLOOK</div>
     </div>
   </header>
+
+  <!-- Auto analyze -->
+  <div class="auto-card">
+    <div class="auto-title">⚡ تحليل تلقائي كامل</div>
+    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار بنفسه، وبيحلل مباشرة — بدون ما ترفع أو تكتب أي شي.</div>
+    <button id="autoBtn">
+      <span id="autoBtnIcon">⚡</span>
+      <span id="autoBtnLabel">حلّل الآن تلقائياً</span>
+    </button>
+    <div class="sources-box" id="sourcesBox"></div>
+  </div>
+
+  <div class="divider-or">أو أدخل البيانات يدوياً</div>
 
   <!-- Guide -->
   <button class="toggle-btn" id="guideToggle">
@@ -291,6 +315,66 @@ window.addEventListener("paste", (e) => {
   }
   if (files.length) { e.preventDefault(); addFiles(files); }
 });
+
+// ---------- Auto analyze ----------
+function renderSources(sources) {
+  const box = document.getElementById("sourcesBox");
+  if (!sources) { box.style.display = "none"; return; }
+  const { price, cotRows, headlines } = sources;
+  let html = "";
+  html += `<div class="src-line"><b>السعر المستخدم:</b> ${price ? price.price + " $ (تحديث: " + price.updatedAtReadable + ")" : "تعذر الجلب"}</div>`;
+  html += `<div class="src-line"><b>عدد صفوف COT المستلمة:</b> ${cotRows ? cotRows.length : 0}</div>`;
+  html += `<div class="src-line"><b>عدد العناوين المستلمة:</b> ${headlines ? headlines.length : 0}</div>`;
+  if (headlines && headlines.length) {
+    html += `<div class="src-line" style="margin-top:6px;"><b>أهم العناوين:</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
+  }
+  box.innerHTML = html;
+  box.style.display = "block";
+}
+
+async function autoAnalyze() {
+  showError("");
+  const btn = document.getElementById("autoBtn");
+  btn.disabled = true;
+  document.getElementById("autoBtnIcon").innerHTML = '<span class="spin">⏳</span>';
+  document.getElementById("autoBtnLabel").textContent = "جارٍ جلب البيانات والتحليل...";
+  document.getElementById("sourcesBox").style.display = "none";
+
+  try {
+    const response = await fetch("/api/auto-analyze", { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "خطأ من الخادم");
+
+    renderSources(data._sources);
+
+    const textBlock = (data.content || []).find(b => b.type === "text");
+    if (!textBlock) throw new Error("لم يرجع النموذج أي نص.");
+    const clean = textBlock.text.replace(/```json|```/g, "").trim();
+
+    let parsed;
+    try { parsed = JSON.parse(clean); }
+    catch (e) {
+      parsed = {
+        trend:"محايد", score:0, confidence:0,
+        summary:"ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
+        cot_reading: clean.slice(0,600) || "لا يوجد نص.",
+        news_reading:"", key_drivers:[], key_levels:{support:[],resistance:[]},
+        risks:["جرّب إعادة المحاولة بعد قليل."],
+      };
+    }
+
+    const entry = { ts: Date.now(), date: new Date().toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"}), ...parsed, outcome:null };
+    showResult(entry);
+    saveHistory(entry);
+  } catch (e) {
+    showError("صار خطأ أثناء التحليل التلقائي: " + (e.message || ""));
+  } finally {
+    btn.disabled = false;
+    document.getElementById("autoBtnIcon").textContent = "⚡";
+    document.getElementById("autoBtnLabel").textContent = "حلّل الآن تلقائياً";
+  }
+}
+document.getElementById("autoBtn").onclick = autoAnalyze;
 
 // ---------- Analyze ----------
 function showError(msg) {
