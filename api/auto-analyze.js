@@ -1,6 +1,6 @@
 // Vercel Serverless Function
 // يجيب تلقائياً: سعر الذهب اللحظي + أحدث بيانات COT + أهم عناوين الأخبار
-// من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Claude للتحليل.
+// من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Google Gemini (مجاني) للتحليل.
 
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
 
@@ -54,7 +54,6 @@ async function fetchNews() {
     fetchRss("https://www.forexlive.com/feed/news", 8),
     fetchRss("https://news.goldseek.com/newsRSS.xml", 6),
   ]);
-  // إزالة التكرار والاحتفاظ بأول 12 عنوان
   return [...new Set([...a, ...b])].slice(0, 12);
 }
 
@@ -64,10 +63,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "الطريقة غير مسموحة." });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
-      error: "ANTHROPIC_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
+      error: "GEMINI_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
     });
   }
 
@@ -121,31 +120,34 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
 
 حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const model = "gemini-2.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 1200,
-        system: sys,
-        messages: [{ role: "user", content: userMsg }],
+        contents: [{ parts: [{ text: userMsg }] }],
+        systemInstruction: { parts: [{ text: sys }] },
+        generationConfig: { maxOutputTokens: 1200, temperature: 0.4 },
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Anthropic API.",
+        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Gemini API.",
       });
     }
 
-    // نرجع رد النموذج + البيانات الخام يلي استخدمها، للشفافية بالواجهة
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+    if (!text) {
+      return res.status(502).json({ error: "لم يرجع Gemini أي نص (finishReason: " + (data?.candidates?.[0]?.finishReason || "غير معروف") + ")." });
+    }
+
+    // نرجع بنفس شكل رد Anthropic القديم + البيانات الخام للشفافية بالواجهة
     return res.status(200).json({
-      ...data,
+      content: [{ type: "text", text }],
       _sources: { price: priceInfo, cotRows, headlines },
     });
   } catch (err) {
