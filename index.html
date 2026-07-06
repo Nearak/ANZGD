@@ -301,22 +301,42 @@ async function handleSession(session) {
     document.getElementById("appContent").style.display = "none";
     return;
   }
-  // فحص حالة التفعيل بجدول profiles
+  // فحص حالة التفعيل وتاريخ الانتهاء بجدول profiles
   let isActive = false;
+  let expiresAt = null;
   try {
-    const { data, error } = await sb.from("profiles").select("is_active").eq("id", session.user.id).single();
-    if (!error && data) isActive = !!data.is_active;
+    const { data, error } = await sb.from("profiles").select("is_active, subscription_expires_at").eq("id", session.user.id).single();
+    if (!error && data) {
+      isActive = !!data.is_active;
+      expiresAt = data.subscription_expires_at ? new Date(data.subscription_expires_at) : null;
+    }
   } catch (e) {}
 
+  const isExpired = expiresAt ? expiresAt.getTime() <= Date.now() : false;
+  const effectivelyActive = isActive && !isExpired;
+
   document.getElementById("authGate").style.display = "none";
-  if (isActive) {
+  if (effectivelyActive) {
     document.getElementById("pendingCard").style.display = "none";
     document.getElementById("appContent").style.display = "block";
-    document.getElementById("userEmailLabel").textContent = session.user.email || "";
+    let label = session.user.email || "";
+    if (expiresAt) {
+      const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86400000);
+      label += ` · باقي ${daysLeft} يوم على الاشتراك`;
+    }
+    document.getElementById("userEmailLabel").textContent = label;
     document.getElementById("histCount").textContent = getHistory().length;
   } else {
     document.getElementById("pendingCard").style.display = "block";
     document.getElementById("appContent").style.display = "none";
+    const pendingText = document.querySelector("#pendingCard p");
+    if (isActive && isExpired) {
+      document.querySelector("#pendingCard h2").textContent = "⏳ انتهت مدة اشتراكك";
+      pendingText.textContent = "خلصت مدة اشتراكك. تواصل معنا لتجديده وبيرجع الموقع يشتغل معك مباشرة.";
+    } else {
+      document.querySelector("#pendingCard h2").textContent = "⏳ حسابك بانتظار التفعيل";
+      pendingText.textContent = "سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.";
+    }
   }
 }
 
