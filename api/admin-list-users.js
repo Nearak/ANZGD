@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id,email,is_active,notes,created_at&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/profiles?select=id,email,is_active,subscription_expires_at,notes,created_at&order=created_at.desc`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
     const data = await r.json();
