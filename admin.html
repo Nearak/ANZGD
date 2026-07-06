@@ -22,10 +22,11 @@
   .badge { padding:2px 8px; border-radius:4px; font-size:11px; }
   .badge.active { background:rgba(63,167,137,0.15); color:var(--bull); }
   .badge.inactive { background:rgba(209,88,76,0.15); color:var(--bear); }
-  .toggle-btn { padding:5px 10px; font-size:12px; border-radius:5px; cursor:pointer; }
-  .toggle-btn.on { background:var(--bear); color:#fff; }
-  .toggle-btn.off { background:var(--bull); color:#fff; }
-  .notes-input { width:150px; font-size:12px; }
+  .badge.expired { background:rgba(201,162,39,0.15); color:var(--gold); }
+  select.duration-select { background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:5px; font-size:12px; }
+  .activate-btn { background:var(--bull); color:#fff; padding:5px 10px; font-size:12px; border-radius:5px; }
+  .deactivate-btn { background:var(--bear); color:#fff; padding:5px 10px; font-size:12px; border-radius:5px; margin-inline-start:4px; }
+  .notes-input { width:130px; font-size:12px; }
   .err { color:var(--bear); font-size:13px; }
   #loginBox { max-width:340px; margin:80px auto; text-align:center; }
   #loginBox input { width:100%; margin-bottom:10px; }
@@ -50,7 +51,7 @@
   <div class="card">
     <table>
       <thead>
-        <tr><th>البريد</th><th>الحالة</th><th>تاريخ التسجيل</th><th>ملاحظات</th><th>إجراء</th></tr>
+        <tr><th>البريد</th><th>الحالة</th><th>ينتهي بتاريخ</th><th>ملاحظات</th><th>إجراء</th></tr>
       </thead>
       <tbody id="usersBody"></tbody>
     </table>
@@ -94,28 +95,69 @@ function renderUsers(users) {
   document.getElementById("countLabel").textContent = `${users.length} مستخدم`;
   const body = document.getElementById("usersBody");
   body.innerHTML = "";
+  const now = Date.now();
+
   users.forEach(u => {
     const tr = document.createElement("tr");
-    const date = u.created_at ? new Date(u.created_at).toLocaleDateString("ar-EG") : "";
+    const expiresAt = u.subscription_expires_at ? new Date(u.subscription_expires_at) : null;
+    const isExpired = expiresAt ? expiresAt.getTime() <= now : false;
+    const effectivelyActive = u.is_active && !isExpired;
+
+    let badgeClass = "inactive", badgeText = "غير مفعّل";
+    if (effectivelyActive) { badgeClass = "active"; badgeText = "مفعّل"; }
+    else if (u.is_active && isExpired) { badgeClass = "expired"; badgeText = "منتهي"; }
+
+    const expiryText = expiresAt
+      ? expiresAt.toLocaleDateString("ar-EG", { year:"numeric", month:"short", day:"numeric" })
+      : "—";
+
     tr.innerHTML = `
       <td>${u.email || ""}</td>
-      <td><span class="badge ${u.is_active ? "active" : "inactive"}">${u.is_active ? "مفعّل" : "غير مفعّل"}</span></td>
-      <td>${date}</td>
-      <td><input class="notes-input" data-id="${u.id}" value="${u.notes || ""}" placeholder="ملاحظة (مثلاً: دفع InstaPay)" /></td>
-      <td><button class="toggle-btn ${u.is_active ? "on" : "off"}" data-id="${u.id}" data-active="${u.is_active}">${u.is_active ? "تعطيل" : "تفعيل"}</button></td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+      <td>${expiryText}</td>
+      <td><input class="notes-input" data-id="${u.id}" value="${u.notes || ""}" placeholder="ملاحظة" /></td>
+      <td>
+        <select class="duration-select" data-id="${u.id}">
+          <option value="7">أسبوع</option>
+          <option value="30" selected>شهر</option>
+          <option value="60">شهرين</option>
+          <option value="90">3 أشهر</option>
+          <option value="180">6 أشهر</option>
+          <option value="365">سنة</option>
+        </select>
+        <button class="activate-btn" data-id="${u.id}">تفعيل/تجديد</button>
+        <button class="deactivate-btn" data-id="${u.id}">إيقاف الآن</button>
+      </td>
     `;
     body.appendChild(tr);
   });
 
-  body.querySelectorAll(".toggle-btn").forEach(btn => {
+  body.querySelectorAll(".activate-btn").forEach(btn => {
     btn.onclick = async () => {
       const id = btn.dataset.id;
-      const newActive = btn.dataset.active !== "true";
+      const select = body.querySelector(`.duration-select[data-id="${id}"]`);
       const notesInput = body.querySelector(`.notes-input[data-id="${id}"]`);
+      const extend = confirm("اضغط OK للتمديد من تاريخ انتهاء الاشتراك الحالي (لو لسا فعّال)، أو Cancel لبدء المدة من اليوم.");
       await fetch("/api/admin-set-active", {
         method: "POST",
         headers: headers(),
-        body: JSON.stringify({ id, is_active: newActive, notes: notesInput.value }),
+        body: JSON.stringify({
+          id,
+          duration_days: Number(select.value),
+          extend_from_current: extend,
+          notes: notesInput.value,
+        }),
+      });
+      loadUsers();
+    };
+  });
+
+  body.querySelectorAll(".deactivate-btn").forEach(btn => {
+    btn.onclick = async () => {
+      await fetch("/api/admin-set-active", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ id: btn.dataset.id, is_active: false }),
       });
       loadUsers();
     };
