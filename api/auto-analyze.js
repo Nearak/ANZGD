@@ -1,0 +1,154 @@
+// Vercel Serverless Function
+// يجيب تلقائياً: سعر الذهب اللحظي + أحدث بيانات COT + أهم عناوين الأخبار
+// من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Claude للتحليل.
+
+const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
+
+async function fetchGoldPrice() {
+  try {
+    const r = await fetch("https://api.gold-api.com/price/XAU", { headers: HEADERS });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchCotRows() {
+  try {
+    const where = encodeURIComponent("upper(market_and_exchange_names) like '%GOLD%'");
+    const order = encodeURIComponent("report_date_as_yyyy_mm_dd DESC");
+    const url = `https://publicreporting.cftc.gov/resource/6dca-aqww.json?$where=${where}&$order=${order}&$limit=3`;
+    const r = await fetch(url, { headers: HEADERS });
+    if (!r.ok) return [];
+    return await r.json();
+  } catch (e) {
+    return [];
+  }
+}
+
+function parseRssTitles(xml, limit) {
+  const items = [...xml.matchAll(/<item[\s\S]*?<\/item>/g)].slice(0, limit);
+  return items
+    .map((m) => {
+      const block = m[0];
+      const titleMatch = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+      return titleMatch ? titleMatch[1].trim() : null;
+    })
+    .filter(Boolean);
+}
+
+async function fetchRss(url, limit) {
+  try {
+    const r = await fetch(url, { headers: HEADERS });
+    if (!r.ok) return [];
+    const xml = await r.text();
+    return parseRssTitles(xml, limit);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function fetchNews() {
+  const [a, b] = await Promise.all([
+    fetchRss("https://www.forexlive.com/feed/news", 8),
+    fetchRss("https://news.goldseek.com/newsRSS.xml", 6),
+  ]);
+  // إزالة التكرار والاحتفاظ بأول 12 عنوان
+  return [...new Set([...a, ...b])].slice(0, 12);
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ error: "الطريقة غير مسموحة." });
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({
+      error: "ANTHROPIC_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
+    });
+  }
+
+  try {
+    const [priceInfo, cotRows, headlines] = await Promise.all([
+      fetchGoldPrice(),
+      fetchCotRows(),
+      fetchNews(),
+    ]);
+
+    const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD) وتقارير الالتزامات التجارية (COT) الصادرة عن CFTC.
+البيانات المُعطاة لك بالأسفل تم جلبها تلقائياً قبل لحظات من مصادر حية (سعر لحظي، بيانات COT رسمية من CFTC، وعناوين أخبار حديثة) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+
+مهم جداً: كن مختصراً جداً بكل حقل نصي لأن المساحة المتاحة للرد محدودة، والتزم حرفياً بالحدود التالية:
+- summary: جملتان كحد أقصى.
+- cot_reading: جملة إلى جملتان.
+- news_reading: جملة إلى جملتان.
+- key_drivers: 3 عناصر كحد أقصى، كل عنصر أقل من 12 كلمة.
+- key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً.
+- risks: عنصران كحد أقصى، كل عنصر أقل من 12 كلمة.
+
+إذا كانت بيانات COT أو الأخبار فارغة أو غير متاحة (تعذر الجلب)، اذكر ذلك بوضوح ضمن الحقل النصي المناسب بدل تجاهل الأمر أو اختلاق بيانات.
+
+أجب حصراً بصيغة JSON صالحة ومكتملة (تأكد من إغلاق كل الأقواس والاقتباسات) بدون أي نص إضافي قبله أو بعده وبدون Markdown، بالمفاتيح التالية بالضبط:
+{
+  "trend": "صعودي" | "هبوطي" | "محايد",
+  "score": رقم من -100 إلى 100,
+  "confidence": رقم من 0 إلى 100,
+  "summary": "...",
+  "cot_reading": "...",
+  "news_reading": "...",
+  "key_drivers": ["...", "...", "..."],
+  "key_levels": {"support": ["..."], "resistance": ["..."]},
+  "risks": ["...", "..."]
+}
+الأولوية القصوى هي إرجاع JSON صالح ومكتمل حتى لو كان مختصراً جداً.`;
+
+    const userMsg = `السعر الحالي الفعلي للذهب XAUUSD الآن: ${
+      priceInfo ? `${priceInfo.price} دولار (آخر تحديث: ${priceInfo.updatedAtReadable})` : "تعذر جلب السعر الآن من المصدر الحي."
+    }
+
+أحدث بيانات تقرير COT (Legacy Futures Only - Gold) من CFTC مباشرة، بصيغة JSON خام (قد يحتوي على أكثر من أسبوع للمقارنة، الأحدث أولاً):
+"""
+${cotRows && cotRows.length ? JSON.stringify(cotRows, null, 2) : "تعذر جلب بيانات COT حالياً من المصدر الحي."}
+"""
+
+أهم العناوين الاقتصادية والمتعلقة بالذهب حالياً (من مصادر أخبار حية):
+"""
+${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join("\n") : "تعذر جلب عناوين حالياً من المصدر الحي."}
+"""
+
+حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-5",
+        max_tokens: 1200,
+        system: sys,
+        messages: [{ role: "user", content: userMsg }],
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Anthropic API.",
+      });
+    }
+
+    // نرجع رد النموذج + البيانات الخام يلي استخدمها، للشفافية بالواجهة
+    return res.status(200).json({
+      ...data,
+      _sources: { price: priceInfo, cotRows, headlines },
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
+  }
+}
