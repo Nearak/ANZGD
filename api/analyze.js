@@ -47,7 +47,12 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         contents: [{ parts }],
         systemInstruction: system ? { parts: [{ text: system }] } : undefined,
-        generationConfig: { maxOutputTokens: 3000, temperature: 0.4, responseMimeType: "application/json" },
+        generationConfig: {
+          maxOutputTokens: 3000,
+          temperature: 0.4,
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 
