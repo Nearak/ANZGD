@@ -49,6 +49,20 @@ async function fetchRss(url, limit) {
   }
 }
 
+async function fetchEconomicCalendar() {
+  try {
+    const r = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", { headers: HEADERS });
+    if (!r.ok) return [];
+    const data = await r.json();
+    // نركز فقط على أحداث الدولار الأمريكي عالية/متوسطة الأهمية — الأكثر تأثيراً على الذهب
+    return (data || [])
+      .filter((ev) => ev.country === "USD" && (ev.impact === "High" || ev.impact === "Medium"))
+      .slice(0, 12);
+  } catch (e) {
+    return [];
+  }
+}
+
 async function fetchNews() {
   const queries = [
     '"gold price" OR XAUUSD OR "gold prices"',
@@ -88,14 +102,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [priceInfo, cotRows, headlines] = await Promise.all([
+    const [priceInfo, cotRows, headlines, calendar] = await Promise.all([
       fetchGoldPrice(),
       fetchCotRows(),
       fetchNews(),
+      fetchEconomicCalendar(),
     ]);
 
     const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD) وتقارير الالتزامات التجارية (COT) الصادرة عن CFTC.
-البيانات المُعطاة لك بالأسفل تم جلبها تلقائياً قبل لحظات من مصادر حية (سعر لحظي، بيانات COT رسمية من CFTC، وعناوين أخبار حديثة) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+البيانات المُعطاة لك بالأسفل تم جلبها تلقائياً قبل لحظات من مصادر حية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، وتقويم اقتصادي أسبوعي للأحداث القادمة) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+
+مهم بخصوص التقويم الاقتصادي: هذي أحداث لسا ما صارت (مستقبلية خلال هذا الأسبوع). استخدمها لتحديد نقاط تقلب متوقعة قريباً (مثلاً: صدور بيانات تضخم أو قرار فائدة يوم معين) واذكرها صراحة ضمن key_drivers أو risks حسب أهميتها، مع ذكر اسم الحدث وتوقيته إن أمكن.
 
 مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
 - summary: 3 إلى 4 جمل، تشرح الخلاصة والسبب الرئيسي وراء التوقع بوضوح.
@@ -135,6 +152,11 @@ ${cotRows && cotRows.length ? JSON.stringify(cotRows, null, 2) : "تعذر جل�
 ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join("\n") : "تعذر جلب عناوين حالياً من المصدر الحي."}
 """
 
+التقويم الاقتصادي لهذا الأسبوع — أحداث الدولار الأمريكي عالية/متوسطة الأهمية القادمة (لسا ما صارت)، بصيغة JSON خام:
+"""
+${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "تعذر جلب التقويم الاقتصادي حالياً من المصدر الحي."}
+"""
+
 حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
 
     const model = "gemini-2.5-flash";
@@ -170,7 +192,7 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
     if (finishReason === "MAX_TOKENS") {
       return res.status(200).json({
         content: [{ type: "text", text }],
-        _sources: { price: priceInfo, cotRows, headlines },
+        _sources: { price: priceInfo, cotRows, headlines, calendar },
         _truncated: true,
       });
     }
@@ -178,7 +200,7 @@ ${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join
     // نرجع بنفس شكل رد Anthropic القديم + البيانات الخام للشفافية بالواجهة
     return res.status(200).json({
       content: [{ type: "text", text }],
-      _sources: { price: priceInfo, cotRows, headlines },
+      _sources: { price: priceInfo, cotRows, headlines, calendar },
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
