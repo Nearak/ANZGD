@@ -356,7 +356,9 @@ async function autoAnalyze() {
     catch (e) {
       parsed = {
         trend:"محايد", score:0, confidence:0,
-        summary:"ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
+        summary: data._truncated
+          ? "الرد انقطع قبل ما يكمل (تجاوز حد الطول). جرّب تضغط الزر من جديد، عادة بتكمل بالمحاولة الثانية."
+          : "ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
         cot_reading: clean.slice(0,600) || "لا يوجد نص.",
         news_reading:"", key_drivers:[], key_levels:{support:[],resistance:[]},
         risks:["جرّب إعادة المحاولة بعد قليل."],
