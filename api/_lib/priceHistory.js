@@ -16,15 +16,10 @@ async function getCache() {
       `${SUPABASE_URL}/rest/v1/market_cache?key=eq.${CACHE_KEY}&select=value,updated_at`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
-    if (!r.ok) {
-      const bodyText = await r.text().catch(() => "");
-      console.error(`[priceHistory] فشل قراءة market_cache — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
-      return null;
-    }
+    if (!r.ok) return null;
     const rows = await r.json();
     return rows?.[0] || null;
   } catch (e) {
-    console.error("[priceHistory] استثناء أثناء قراءة market_cache:", e.message || e);
     return null;
   }
 }
@@ -49,26 +44,16 @@ async function setCache(value) {
 
 async function fetchFreshDailySeries() {
   const apiKey = process.env.GOLD_API_KEY;
-  if (!apiKey) {
-    console.error("[priceHistory] GOLD_API_KEY غير مضبوط على الخادم إطلاقاً.");
-    return null;
-  }
+  if (!apiKey) return null;
   const end = Math.floor(Date.now() / 1000);
   const start = end - 90 * 24 * 60 * 60;
   const url = `https://api.gold-api.com/history?symbol=XAU&startTimestamp=${start}&endTimestamp=${end}&groupBy=day&aggregation=avg&orderBy=asc`;
   try {
     const r = await fetch(url, { headers: { "x-api-key": apiKey } });
-    if (!r.ok) {
-      const bodyText = await r.text().catch(() => "");
-      console.error(`[priceHistory] فشل طلب /history — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
-      return null;
-    }
+    if (!r.ok) return null;
     const rows = await r.json();
-    const series = rows.map((row) => row.avg_price).filter((v) => typeof v === "number");
-    console.log(`[priceHistory] نجح الجلب — عدد النقاط: ${series.length}`);
-    return series;
+    return rows.map((row) => Number(row.avg_price)).filter((v) => !isNaN(v));
   } catch (e) {
-    console.error("[priceHistory] استثناء أثناء جلب /history:", e.message || e);
     return null;
   }
 }
@@ -91,20 +76,20 @@ export async function getTechnicalSnapshot() {
     if (series && series.length > 0) {
       await setCache(series);
     } else if (cached && Array.isArray(cached.value)) {
-      series = cached.value; // احتياطي: استخدم آخر نسخة محفوظة لو فشل الجلب الجديد
+      series = cached.value;
       fromCache = true;
     }
   }
 
-  if (!series || series.length < 20) return null;
+  if (!series || series.length < 15) return null;
 
   return {
     lastClose: series[series.length - 1],
-    sma20: sma(series, 20),
+    sma20: series.length >= 20 ? sma(series, 20) : null,
     sma50: series.length >= 50 ? sma(series, 50) : null,
     rsi14: rsi(series, 14),
-    macd: macd(series),
-    bollinger: bollinger(series, 20, 2),
+    macd: series.length >= 35 ? macd(series) : null,
+    bollinger: series.length >= 20 ? bollinger(series, 20, 2) : null,
     dataPoints: series.length,
     fromCache,
   };
