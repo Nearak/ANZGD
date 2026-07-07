@@ -16,10 +16,15 @@ async function getCache() {
       `${SUPABASE_URL}/rest/v1/market_cache?key=eq.${CACHE_KEY}&select=value,updated_at`,
       { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
     );
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const bodyText = await r.text().catch(() => "");
+      console.error(`[priceHistory] فشل قراءة market_cache — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
+      return null;
+    }
     const rows = await r.json();
     return rows?.[0] || null;
   } catch (e) {
+    console.error("[priceHistory] استثناء أثناء قراءة market_cache:", e.message || e);
     return null;
   }
 }
@@ -44,16 +49,26 @@ async function setCache(value) {
 
 async function fetchFreshDailySeries() {
   const apiKey = process.env.GOLD_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.error("[priceHistory] GOLD_API_KEY غير مضبوط على الخادم إطلاقاً.");
+    return null;
+  }
   const end = Math.floor(Date.now() / 1000);
   const start = end - 90 * 24 * 60 * 60;
   const url = `https://api.gold-api.com/history?symbol=XAU&startTimestamp=${start}&endTimestamp=${end}&groupBy=day&aggregation=avg&orderBy=asc`;
   try {
     const r = await fetch(url, { headers: { "x-api-key": apiKey } });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const bodyText = await r.text().catch(() => "");
+      console.error(`[priceHistory] فشل طلب /history — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
+      return null;
+    }
     const rows = await r.json();
-    return rows.map((row) => row.avg_price).filter((v) => typeof v === "number");
+    const series = rows.map((row) => row.avg_price).filter((v) => typeof v === "number");
+    console.log(`[priceHistory] نجح الجلب — عدد النقاط: ${series.length}`);
+    return series;
   } catch (e) {
+    console.error("[priceHistory] استثناء أثناء جلب /history:", e.message || e);
     return null;
   }
 }
