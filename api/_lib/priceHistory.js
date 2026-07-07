@@ -1,7 +1,4 @@
-// يجيب سلسلة أسعار يومية للذهب (آخر ~90 يوم) من gold-api.com، مع تخزين مؤقت (Cache)
-// بجدول market_cache بقاعدة بيانات Supabase — لأن endpoint البيانات التاريخية محدود
-// بـ10 طلبات بالساعة، وبكذا كل المشتركين بيستفيدوا من نفس النسخة المخزنة مؤقتاً.
-
+```js
 import { sma, rsi, macd, bollinger } from "./indicators.js";
 
 const CACHE_TTL_MINUTES = 45;
@@ -10,21 +7,38 @@ const CACHE_KEY = "xau_daily_series";
 async function getCache() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!SUPABASE_URL || !SERVICE_KEY) return null;
+
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/market_cache?key=eq.${CACHE_KEY}&select=value,updated_at`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+      {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+        },
+      }
     );
+
     if (!r.ok) {
       const bodyText = await r.text().catch(() => "");
-      console.error(`[priceHistory] فشل قراءة market_cache — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
+      console.error(
+        `[priceHistory] فشل قراءة market_cache — الحالة: ${r.status}. الرد: ${bodyText.slice(
+          0,
+          300
+        )}`
+      );
       return null;
     }
+
     const rows = await r.json();
     return rows?.[0] || null;
   } catch (e) {
-    console.error("[priceHistory] استثناء أثناء قراءة market_cache:", e.message || e);
+    console.error(
+      "[priceHistory] استثناء أثناء قراءة market_cache:",
+      e.message || e
+    );
     return null;
   }
 }
@@ -32,7 +46,9 @@ async function getCache() {
 async function setCache(value) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!SUPABASE_URL || !SERVICE_KEY) return;
+
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/market_cache`, {
       method: "POST",
@@ -42,44 +58,96 @@ async function setCache(value) {
         "Content-Type": "application/json",
         Prefer: "resolution=merge-duplicates",
       },
-      body: JSON.stringify({ key: CACHE_KEY, value, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        key: CACHE_KEY,
+        value,
+        updated_at: new Date().toISOString(),
+      }),
     });
-  } catch (e) {}
+  } catch (e) {
+    console.error("[priceHistory] Cache write error:", e);
+  }
 }
 
 async function fetchFreshDailySeries() {
   const apiKey = process.env.GOLD_API_KEY;
+
   if (!apiKey) {
-    console.error("[priceHistory] GOLD_API_KEY غير مضبوط على الخادم إطلاقاً.");
+    console.error("[priceHistory] GOLD_API_KEY غير موجود");
     return null;
   }
+
   const end = Math.floor(Date.now() / 1000);
   const start = end - 90 * 24 * 60 * 60;
-  const url = `https://api.gold-api.com/history?symbol=XAU&startTimestamp=${start}&endTimestamp=${end}&groupBy=day&aggregation=avg&orderBy=asc`;
+
+  const url =
+    `https://api.gold-api.com/history` +
+    `?symbol=XAU` +
+    `&startTimestamp=${start}` +
+    `&endTimestamp=${end}` +
+    `&groupBy=day` +
+    `&aggregation=avg` +
+    `&orderBy=asc`;
+
   try {
-    const r = await fetch(url, { headers: { "x-api-key": apiKey } });
+    console.log("========== GOLD API DEBUG ==========");
+    console.log("URL:", url);
+    console.log("API KEY EXISTS:", !!apiKey);
+    console.log("API KEY LENGTH:", apiKey.length);
+
+    const r = await fetch(url, {
+      headers: {
+        "x-api-key": apiKey,
+      },
+    });
+
+    console.log("STATUS:", r.status);
+
+    const bodyText = await r.text();
+
+    console.log("BODY:");
+    console.log(bodyText);
+    console.log("===================================");
+
     if (!r.ok) {
-      const bodyText = await r.text().catch(() => "");
-      console.error(`[priceHistory] فشل طلب /history — الحالة: ${r.status}. الرد: ${bodyText.slice(0, 300)}`);
       return null;
     }
-    const rows = await r.json();
-    const series = rows.map((row) => row.avg_price).filter((v) => typeof v === "number");
-    console.log(`[priceHistory] نجح الجلب — عدد النقاط: ${series.length}`);
+
+    const rows = JSON.parse(bodyText);
+
+    console.log("IS ARRAY:", Array.isArray(rows));
+
+    if (!Array.isArray(rows)) {
+      console.error("[priceHistory] Response is not an array");
+      return null;
+    }
+
+    const series = rows
+      .map((row) => row.avg_price)
+      .filter((v) => typeof v === "number");
+
+    console.log("[priceHistory] POINTS:", series.length);
+
     return series;
   } catch (e) {
-    console.error("[priceHistory] استثناء أثناء جلب /history:", e.message || e);
+    console.error(
+      "[priceHistory] استثناء أثناء جلب /history:",
+      e.message || e
+    );
     return null;
   }
 }
 
 export async function getTechnicalSnapshot() {
   const cached = await getCache();
+
   let series = null;
   let fromCache = false;
 
   if (cached?.updated_at) {
-    const ageMinutes = (Date.now() - new Date(cached.updated_at).getTime()) / 60000;
+    const ageMinutes =
+      (Date.now() - new Date(cached.updated_at).getTime()) / 60000;
+
     if (ageMinutes < CACHE_TTL_MINUTES && Array.isArray(cached.value)) {
       series = cached.value;
       fromCache = true;
@@ -88,15 +156,19 @@ export async function getTechnicalSnapshot() {
 
   if (!series) {
     series = await fetchFreshDailySeries();
+
     if (series && series.length > 0) {
       await setCache(series);
     } else if (cached && Array.isArray(cached.value)) {
-      series = cached.value; // احتياطي: استخدم آخر نسخة محفوظة لو فشل الجلب الجديد
+      series = cached.value;
       fromCache = true;
     }
   }
 
-  if (!series || series.length < 20) return null;
+  if (!series || series.length < 20) {
+    console.error("[priceHistory] لا توجد بيانات كافية للتحليل");
+    return null;
+  }
 
   return {
     lastClose: series[series.length - 1],
@@ -109,3 +181,4 @@ export async function getTechnicalSnapshot() {
     fromCache,
   };
 }
+```
