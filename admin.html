@@ -27,6 +27,7 @@
   .activate-btn { background:var(--bull); color:#fff; padding:5px 10px; font-size:12px; border-radius:5px; }
   .deactivate-btn { background:var(--bear); color:#fff; padding:5px 10px; font-size:12px; border-radius:5px; margin-inline-start:4px; }
   .notes-input { width:130px; font-size:12px; }
+  .limit-input { background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:5px; padding:5px; font-size:12px; }
   .err { color:var(--bear); font-size:13px; }
   #loginBox { max-width:340px; margin:80px auto; text-align:center; }
   #loginBox input { width:100%; margin-bottom:10px; }
@@ -44,6 +45,23 @@
 
 <div class="wrap" id="dashboard" style="display:none;">
   <h1>لوحة تحكم المشتركين</h1>
+
+  <div class="card">
+    <h3 style="margin-top:0; font-size:14px;">⚙️ إعدادات عامة</h3>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+      <div>
+        <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">الحد اليومي الافتراضي (لكل المستخدمين)</label>
+        <input type="number" id="defaultLimitInput" min="1" style="width:100px;" />
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <label style="display:block; font-size:11px; color:var(--text-dim); margin-bottom:4px;">نسبة النجاح المعروضة بالصفحة الرئيسية</label>
+        <input type="text" id="accuracyTextInput" style="width:100%;" placeholder="مثلاً: 78% خلال آخر شهرين" />
+      </div>
+      <button id="saveSettingsBtn">حفظ الإعدادات</button>
+    </div>
+    <div class="err" id="settingsMsg" style="margin-top:8px;"></div>
+  </div>
+
   <div class="card">
     <button id="refreshBtn">🔄 تحديث القائمة</button>
     <span id="countLabel" style="margin-inline-start:12px; color:var(--text-dim); font-size:13px;"></span>
@@ -51,7 +69,7 @@
   <div class="card">
     <table>
       <thead>
-        <tr><th>البريد</th><th>الحالة</th><th>ينتهي بتاريخ</th><th>ملاحظات</th><th>إجراء</th></tr>
+        <tr><th>البريد</th><th>الحالة</th><th>ينتهي بتاريخ</th><th>الحد اليومي</th><th>ملاحظات</th><th>إجراء</th></tr>
       </thead>
       <tbody id="usersBody"></tbody>
     </table>
@@ -72,10 +90,40 @@ document.getElementById("loginBtn").onclick = async () => {
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
     sessionStorage.setItem("admin_secret", ADMIN_SECRET);
+    loadSettings();
   }
 };
 
 document.getElementById("refreshBtn").onclick = loadUsers;
+
+async function loadSettings() {
+  try {
+    const r = await fetch("/api/admin-settings", { headers: headers() });
+    const data = await r.json();
+    if (r.ok) {
+      document.getElementById("defaultLimitInput").value = data.default_daily_limit;
+      document.getElementById("accuracyTextInput").value = data.public_accuracy_text;
+    }
+  } catch (e) {}
+}
+
+document.getElementById("saveSettingsBtn").onclick = async () => {
+  const msg = document.getElementById("settingsMsg");
+  msg.textContent = "جارٍ الحفظ...";
+  msg.style.color = "var(--text-dim)";
+  try {
+    const r = await fetch("/api/admin-settings", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        default_daily_limit: Number(document.getElementById("defaultLimitInput").value) || 5,
+        public_accuracy_text: document.getElementById("accuracyTextInput").value,
+      }),
+    });
+    if (r.ok) { msg.textContent = "✓ تم الحفظ"; msg.style.color = "var(--bull)"; }
+    else { msg.textContent = "فشل الحفظ"; msg.style.color = "var(--bear)"; }
+  } catch (e) { msg.textContent = "خطأ بالاتصال"; msg.style.color = "var(--bear)"; }
+};
 
 async function loadUsers() {
   document.getElementById("loginErr").textContent = "";
@@ -115,6 +163,7 @@ function renderUsers(users) {
       <td>${u.email || ""}</td>
       <td><span class="badge ${badgeClass}">${badgeText}</span></td>
       <td>${expiryText}</td>
+      <td><input type="number" min="0" class="limit-input" data-id="${u.id}" value="${u.daily_limit_override ?? ""}" placeholder="افتراضي" style="width:70px;" /></td>
       <td><input class="notes-input" data-id="${u.id}" value="${u.notes || ""}" placeholder="ملاحظة" /></td>
       <td>
         <select class="duration-select" data-id="${u.id}">
@@ -163,6 +212,17 @@ function renderUsers(users) {
     };
   });
 
+  body.querySelectorAll(".limit-input").forEach(inp => {
+    inp.onblur = async () => {
+      const v = inp.value.trim();
+      await fetch("/api/admin-set-active", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ id: inp.dataset.id, daily_limit_override: v === "" ? null : Number(v) }),
+      });
+    };
+  });
+
   body.querySelectorAll(".notes-input").forEach(inp => {
     inp.onblur = async () => {
       await fetch("/api/admin-set-active", {
@@ -182,6 +242,7 @@ if (saved) {
     if (ok) {
       document.getElementById("loginBox").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
+      loadSettings();
     }
   });
 }
