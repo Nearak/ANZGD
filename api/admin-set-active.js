@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "غير مصرح — كلمة السر الإدارية غير صحيحة." });
   }
 
-  const { id, is_active, notes, duration_days, extend_from_current } = req.body || {};
+  const { id, is_active, notes, duration_days, extend_from_current, daily_limit_override } = req.body || {};
   if (!id) {
     return res.status(400).json({ error: "id مفقود." });
   }
@@ -23,6 +23,9 @@ export default async function handler(req, res) {
 
   const body = {};
   if (typeof notes === "string") body.notes = notes;
+  if (daily_limit_override === null || typeof daily_limit_override === "number") {
+    body.daily_limit_override = daily_limit_override;
+  }
 
   try {
     if (typeof duration_days === "number" && duration_days > 0) {
