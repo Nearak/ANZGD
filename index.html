@@ -90,6 +90,45 @@
   .hist-item { background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
   .hist-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .hist-actions { display:flex; align-items:center; gap:8px; }
+
+  .current-situation { background:linear-gradient(180deg, rgba(201,162,39,0.08), transparent); border-right:3px solid var(--gold); border-radius:6px; padding:12px 16px; margin-top:14px; font-size:14px; line-height:1.9; }
+  .scenario-box { border-radius:8px; padding:14px; }
+  .scenario-bull { background:rgba(63,167,137,0.08); border:1px solid rgba(63,167,137,0.3); }
+  .scenario-bear { background:rgba(209,88,76,0.08); border:1px solid rgba(209,88,76,0.3); }
+  .scenario-title { font-size:12.5px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+  .invalidation-line { margin-top:12px; font-size:12.5px; color:var(--text-dim); background:var(--panel2); border-radius:6px; padding:8px 12px; }
+  .invalidation-line b { color:var(--gold); font-family: ui-monospace, monospace; }
+
+  .usage-bar { font-size:12px; color:var(--text-dim); margin-top:10px; }
+  .usage-bar.limit-reached { color:var(--bear); }
+
+  /* Landing page */
+  .landing { max-width: 980px; margin: 0 auto; }
+  .hero { text-align:center; padding:50px 16px 40px; }
+  .hero-badge { display:inline-block; background:var(--panel2); border:1px solid var(--gold-soft); color:var(--gold); font-size:11px; padding:4px 12px; border-radius:20px; margin-bottom:18px; font-family:ui-monospace,monospace; }
+  .hero h1 { font-family:Georgia,serif; font-size:34px; margin:0 0 14px; line-height:1.3; }
+  .hero p { font-size:15px; color:var(--text-dim); max-width:600px; margin:0 auto 26px; line-height:1.9; }
+  .cta-btn { background:var(--gold); color:#0B0D10; border:none; border-radius:8px; padding:14px 38px; font-size:15px; font-weight:700; cursor:pointer; }
+  .hero-svg { max-width:320px; margin:0 auto 30px; display:block; }
+
+  .stats-row { display:flex; justify-content:center; gap:40px; flex-wrap:wrap; padding:26px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:30px 0; }
+  .stat-item { text-align:center; }
+  .stat-num { font-family:Georgia,serif; font-size:28px; color:var(--gold); }
+  .stat-label { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+  .features-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 16px 40px; }
+  @media (max-width:720px) { .features-grid { grid-template-columns:1fr; } }
+  .feature-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
+  .feature-icon { font-size:24px; margin-bottom:10px; }
+  .feature-title { font-size:14.5px; font-weight:700; margin-bottom:6px; }
+  .feature-desc { font-size:13px; color:var(--text-dim); line-height:1.8; }
+
+  .about-section { padding:10px 16px 40px; text-align:center; }
+  .about-section h2 { font-family:Georgia,serif; font-size:22px; margin-bottom:14px; }
+  .about-section p { font-size:14px; color:var(--text-dim); line-height:2; max-width:700px; margin:0 auto; }
+
+  .landing-footer { text-align:center; padding:20px 16px 40px; }
+  .landing-disclaimer { font-size:11px; color:var(--text-dim); max-width:600px; margin:16px auto 0; line-height:1.8; }
   select.outcome { background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:4px; font-size:11px; padding:3px 6px; }
   .del-btn { background:none; border:none; cursor:pointer; color:var(--text-dim); }
   .stats-bar { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--text-dim); }
@@ -129,8 +168,71 @@
     </div>
   </header>
 
+  <!-- Landing page -->
+  <div id="landingPage" class="landing" style="display:none;">
+    <div class="hero">
+      <div class="hero-badge">XAUUSD · AI-POWERED ANALYSIS</div>
+      <svg class="hero-svg" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="10,90 50,70 90,80 130,40 170,55 210,20 250,35 310,10" fill="none" stroke="#C9A227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="310" cy="10" r="5" fill="#C9A227"/>
+        <line x1="10" y1="105" x2="310" y2="105" stroke="#242A32" stroke-width="1"/>
+      </svg>
+      <h1>تحليل الذهب بالذكاء الاصطناعي، بضغطة زر وحدة</h1>
+      <p>سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، والتحليل الفني الكلاسيكي (RSI, MACD, MAs, Bollinger) — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية.</p>
+      <button class="cta-btn" id="landingCtaBtn">ابدأ الآن</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num" id="statSubscribers">—</div>
+        <div class="stat-label">مشترك نشط</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num" id="statAccuracy">—</div>
+        <div class="stat-label">نسبة النجاح</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">4</div>
+        <div class="stat-label">محاور تحليل مدمجة</div>
+      </div>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">بيانات COT رسمية</div>
+        <div class="feature-desc">تمركز المضاربين والمؤسسات مباشرة من CFTC، لقراءة نفسية السوق الحقيقية.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📰</div>
+        <div class="feature-title">أخبار مستهدفة</div>
+        <div class="feature-desc">فلترة ذكية لأهم الأخبار المؤثرة فعلياً على الذهب والفائدة والدولار.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <div class="feature-title">تقويم اقتصادي</div>
+        <div class="feature-desc">أقرب الأحداث عالية الأهمية القادمة قبل ما تفاجئك بتقلبات مفاجئة.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <div class="feature-title">تحليل فني كلاسيكي</div>
+        <div class="feature-desc">RSI، MACD، المتوسطات المتحركة، بولينجر — محسوبة رياضياً من بيانات حقيقية.</div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <h2>ليش هالموقع؟</h2>
+      <p>بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (4 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
+    </div>
+
+    <div class="landing-footer">
+      <button class="cta-btn" id="landingCtaBtn2">ابدأ الآن</button>
+      <div class="landing-disclaimer">هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.</div>
+    </div>
+  </div>
+
   <!-- Auth gate -->
-  <div id="authGate" class="auth-wrap">
+  <div id="authGate" class="auth-wrap" style="display:none;">
     <div class="auth-card">
       <div class="auth-title" id="authTitle">تسجيل الدخول</div>
       <div class="auth-field">
@@ -189,6 +291,7 @@
       <svg id="gauge" viewBox="0 0 220 130" width="220" height="130"></svg>
     </div>
     <p class="summary" id="resSummary"></p>
+    <div class="current-situation" id="resCurrentSituation" style="display:none;"></div>
     <div class="grid2">
       <div class="split"><div class="split-title mono">قراءة COT</div><div class="split-body" id="resCot"></div></div>
       <div class="split"><div class="split-title mono">قراءة الأخبار</div><div class="split-body" id="resNews"></div></div>
@@ -211,12 +314,24 @@
         <div id="resistanceChips"></div>
       </div>
     </div>
+    <div class="grid2" id="scenariosWrap" style="margin-top:16px; display:none;">
+      <div class="scenario-box scenario-bull">
+        <div class="scenario-title" style="color:var(--bull);">📈 السيناريو الصعودي</div>
+        <div id="resScenarioBull" style="font-size:13.5px; line-height:1.8;"></div>
+      </div>
+      <div class="scenario-box scenario-bear">
+        <div class="scenario-title" style="color:var(--bear);">📉 السيناريو الهبوطي</div>
+        <div id="resScenarioBear" style="font-size:13.5px; line-height:1.8;"></div>
+      </div>
+    </div>
+    <div class="invalidation-line" id="resInvalidation" style="display:none;"></div>
     <div id="risksWrap" style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
       <div class="split-title mono" style="color:var(--text-dim);">سيناريوهات مخالفة / مخاطر</div>
       <ul class="list" id="risksList" style="color:var(--text-dim);"></ul>
     </div>
   </div>
 
+  <div class="usage-bar" id="usageBar"></div>
   <!-- History -->
   <button class="toggle-btn" id="histToggle" style="margin-top:22px;">
     <span>🕘 سجل التوقعات الأسبوعية (<span id="histCount">0</span>)</span>
@@ -240,26 +355,49 @@ let currentSession = null;
 let authMode = "login"; // or "signup"
 
 async function initAuth() {
+  loadPublicStats();
   const cfgRes = await fetch("/api/config");
   const cfg = await cfgRes.json();
   sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
   const { data: { session } } = await sb.auth.getSession();
-  await handleSession(session);
+  if (session) {
+    await handleSession(session);
+  } else {
+    document.getElementById("landingPage").style.display = "block";
+  }
 
   sb.auth.onAuthStateChange(async (_event, session) => {
     await handleSession(session);
   });
 }
 
+async function loadPublicStats() {
+  try {
+    const r = await fetch("/api/public-stats");
+    const data = await r.json();
+    document.getElementById("statSubscribers").textContent = data.activeSubscribers ?? "—";
+    document.getElementById("statAccuracy").textContent = data.accuracyText || "قيد التجميع";
+  } catch (e) {}
+}
+
+function showAuthGateFromLanding() {
+  document.getElementById("landingPage").style.display = "none";
+  document.getElementById("authGate").style.display = "block";
+}
+document.getElementById("landingCtaBtn").onclick = showAuthGateFromLanding;
+document.getElementById("landingCtaBtn2").onclick = showAuthGateFromLanding;
+
 async function handleSession(session) {
   currentSession = session;
   if (!session) {
+    document.getElementById("landingPage").style.display = "none";
     document.getElementById("authGate").style.display = "block";
     document.getElementById("pendingCard").style.display = "none";
     document.getElementById("appContent").style.display = "none";
     return;
   }
+  document.getElementById("landingPage").style.display = "none";
   // فحص حالة التفعيل وتاريخ الانتهاء بجدول profiles
   let isActive = false;
   let expiresAt = null;
@@ -418,6 +556,13 @@ function renderSources(sources) {
   box.style.display = "block";
 }
 
+function updateUsageBar(usage) {
+  const el = document.getElementById("usageBar");
+  if (!usage) { el.textContent = ""; return; }
+  el.textContent = `استخدمت ${usage.used} من ${usage.limit} تحليلات اليوم.`;
+  el.className = "usage-bar" + (usage.used >= usage.limit ? " limit-reached" : "");
+}
+
 async function autoAnalyze() {
   showError("");
   const btn = document.getElementById("autoBtn");
@@ -429,7 +574,11 @@ async function autoAnalyze() {
   try {
     const response = await fetch("/api/auto-analyze", { method: "POST", headers: { ...authHeaders() } });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "خطأ من الخادم");
+    if (data._usage) updateUsageBar(data._usage);
+    if (!response.ok) {
+      if (response.status === 429) { showError(data.error); return; }
+      throw new Error(data.error || "خطأ من الخادم");
+    }
 
     renderSources(data._sources);
 
@@ -484,6 +633,23 @@ function showResult(r) {
   document.getElementById("resNews").textContent = r.news_reading || "";
   document.getElementById("resCalendar").textContent = r.calendar_reading || "";
   document.getElementById("resTechnical").textContent = r.technical_reading || "";
+
+  const csEl = document.getElementById("resCurrentSituation");
+  if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
+  else { csEl.style.display = "none"; }
+
+  const scWrap = document.getElementById("scenariosWrap");
+  if (r.scenarios && (r.scenarios.bullish || r.scenarios.bearish)) {
+    document.getElementById("resScenarioBull").textContent = r.scenarios.bullish || "—";
+    document.getElementById("resScenarioBear").textContent = r.scenarios.bearish || "—";
+    scWrap.style.display = "grid";
+  } else { scWrap.style.display = "none"; }
+
+  const invEl = document.getElementById("resInvalidation");
+  if (r.invalidation_level) {
+    invEl.innerHTML = `⚠️ مستوى الإبطال: <b>${r.invalidation_level}</b> — لو انكسر هالمستوى، التوقع الحالي يصير غير صالح ولازم تعاد القراءة.`;
+    invEl.style.display = "block";
+  } else { invEl.style.display = "none"; }
   drawGauge(r.score, r.trend);
 
   const driversList = document.getElementById("driversList");
