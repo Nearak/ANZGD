@@ -353,6 +353,7 @@ const C = { bull:"#3FA789", bear:"#D1584C", neutral:"#8E93A0" };
 let sb = null;
 let currentSession = null;
 let authMode = "login"; // or "signup"
+let authGateRequested = false;
 
 async function initAuth() {
   loadPublicStats();
@@ -361,11 +362,7 @@ async function initAuth() {
   sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
   const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    await handleSession(session);
-  } else {
-    document.getElementById("landingPage").style.display = "block";
-  }
+  await handleSession(session);
 
   sb.auth.onAuthStateChange(async (_event, session) => {
     await handleSession(session);
@@ -382,6 +379,7 @@ async function loadPublicStats() {
 }
 
 function showAuthGateFromLanding() {
+  authGateRequested = true;
   document.getElementById("landingPage").style.display = "none";
   document.getElementById("authGate").style.display = "block";
 }
@@ -391,10 +389,15 @@ document.getElementById("landingCtaBtn2").onclick = showAuthGateFromLanding;
 async function handleSession(session) {
   currentSession = session;
   if (!session) {
-    document.getElementById("landingPage").style.display = "none";
-    document.getElementById("authGate").style.display = "block";
     document.getElementById("pendingCard").style.display = "none";
     document.getElementById("appContent").style.display = "none";
+    if (authGateRequested) {
+      document.getElementById("landingPage").style.display = "none";
+      document.getElementById("authGate").style.display = "block";
+    } else {
+      document.getElementById("landingPage").style.display = "block";
+      document.getElementById("authGate").style.display = "none";
+    }
     return;
   }
   document.getElementById("landingPage").style.display = "none";
