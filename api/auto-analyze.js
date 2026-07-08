@@ -4,6 +4,7 @@
 
 import { verifyActiveUser } from "./_lib/auth.js";
 import { getTechnicalSnapshot } from "./_lib/priceHistory.js";
+import { checkAndIncrementUsage } from "./_lib/rateLimit.js";
 
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
 
@@ -110,6 +111,14 @@ export default async function handler(req, res) {
     return res.status(auth.status).json({ error: auth.error });
   }
 
+  const usage = await checkAndIncrementUsage(auth.userId);
+  if (!usage.allowed) {
+    return res.status(429).json({
+      error: `وصلت للحد اليومي المسموح (${usage.limit} تحليلات). جرّب بكرة، أو تواصل معنا لزيادة الحد.`,
+      _usage: usage,
+    });
+  }
+
   try {
     const [priceInfo, cotRows, headlines, calendar, technical] = await Promise.all([
       fetchGoldPrice(),
@@ -130,12 +139,18 @@ export default async function handler(req, res) {
 
 بعد تحليل الأربعة، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور الأربعة متفقة مع بعضها أم متعارضة؟ أي محور له الوزن الأكبر بقرارك ولماذا؟
 
+**الخطوة الخامسة — الدمج والسيناريوهات المستقبلية:** بعد تحليل المحاور الأربعة، ادمجهم بتحليل موحّد يشرح الوضع الحالي، وابنِ سيناريوهين مستقبليين واضحين (صعودي وهبوطي) بشرط أن يذكر كل سيناريو: **ما الذي يجب أن يحدث** (مثلاً كسر مستوى معين، أو نتيجة معينة لحدث بالتقويم، أو تأكيد فني) **حتى يتحقق هذا السيناريو**. أضف أيضاً "مستوى إبطال" (invalidation level) — نقطة سعرية لو انكسرت، يصبح التوقع الحالي غير صالح ويجب إعادة التقييم.
+
 مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
 - summary: 4 إلى 5 جمل، تلخص التوافق/التعارض بين المحاور الأربعة والسبب الرئيسي وراء القرار النهائي.
 - cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز ودلالتها.
 - news_reading: 2 إلى 3 جمل تربط عناوين محددة بتأثيرها المتوقع على الذهب. تجاهل تماماً أي عنوان لا علاقة له بالاقتصاد الكلي أو الذهب أو الدولار أو الفائدة.
 - calendar_reading: 1 إلى 2 جملة عن أقرب حدث/أحداث عالية الأهمية القادمة وتوقيتها المحتمل.
 - technical_reading: 2 إلى 3 جمل تفسر تحديداً قراءات RSI وMACD والمتوسطات المتحركة وموقع السعر ضمن نطاقات بولينجر.
+- current_situation: 3 إلى 4 جمل تصف الوضع العام الحالي للذهب بلغة مباشرة وسهلة، كخلاصة مدمجة لغير المتخصصين.
+- scenarios.bullish: جملتان إلى 3 — الشرط اللازم لتحقق السيناريو الصعودي والمستوى المرتبط فيه.
+- scenarios.bearish: جملتان إلى 3 — الشرط اللازم لتحقق السيناريو الهبوطي والمستوى المرتبط فيه.
+- invalidation_level: رقم أو نطاق قصير فقط (مثل "3290" أو "3280-3290") مع أقل من 8 كلمات توضيحية.
 - key_drivers: 3 إلى 4 عناصر، كل عنصر جملة كاملة واضحة (حتى 18 كلمة).
 - key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً (وبالاستفادة من مستويات SMA/Bollinger إن كانت منطقية كدعم/مقاومة).
 - risks: 2 إلى 3 عناصر، كل عنصر جملة واضحة (حتى 18 كلمة).
@@ -152,6 +167,9 @@ export default async function handler(req, res) {
   "news_reading": "...",
   "calendar_reading": "...",
   "technical_reading": "...",
+  "current_situation": "...",
+  "scenarios": {"bullish": "...", "bearish": "..."},
+  "invalidation_level": "...",
   "key_drivers": ["...", "...", "..."],
   "key_levels": {"support": ["..."], "resistance": ["..."]},
   "risks": ["...", "..."]
@@ -199,7 +217,7 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
         contents: [{ parts: [{ text: userMsg }] }],
         systemInstruction: { parts: [{ text: sys }] },
         generationConfig: {
-          maxOutputTokens: 4096,
+          maxOutputTokens: 5500,
           temperature: 0.4,
           responseMimeType: "application/json",
           thinkingConfig: { thinkingBudget: 0 },
@@ -223,6 +241,7 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
       return res.status(200).json({
         content: [{ type: "text", text }],
         _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
+        _usage: usage,
         _truncated: true,
       });
     }
@@ -231,6 +250,7 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
     return res.status(200).json({
       content: [{ type: "text", text }],
       _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
+        _usage: usage,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
