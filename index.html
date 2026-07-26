@@ -1,298 +1,622 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>مكتب تحليل الذهب — COT & News Intelligence</title>
+<title data-i18n="pageTitle">مكتب تحليل الذهب — COT & News Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --bg: #0B0D10;
-    --panel: #12151A;
-    --panel2: #171B21;
-    --line: #242A32;
-    --gold: #C9A227;
-    --gold-soft: #8A7332;
-    --text: #EDE9DF;
-    --text-dim: #8E93A0;
-    --bull: #3FA789;
-    --bear: #D1584C;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-    padding: 28px 16px 60px;
-  }
-  .mono { font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace; }
-  .wrap { max-width: 980px; margin: 0 auto; }
-  header { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); padding-bottom:18px; margin-bottom:24px; }
-  .logo { width:34px; height:34px; border-radius:6px; background:var(--gold); color:#0B0D10; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; }
-  h1 { font-family: Georgia, serif; font-size:22px; margin:0; }
-  .subtitle { font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-top:2px; }
+/* ============ CSS VARIABLES & THEMES ============ */
+:root {
+  --bg: #0B0D10;
+  --bg-elevated: #12151A;
+  --panel: #171B21;
+  --panel-hover: #1E232B;
+  --line: #242A32;
+  --line-strong: #2F3640;
+  --gold: #C9A227;
+  --gold-bright: #E8C547;
+  --gold-soft: #8A7332;
+  --gold-dim: #5C4D1F;
+  --text: #EDE9DF;
+  --text-secondary: #B8BDC7;
+  --text-dim: #8E93A0;
+  --text-muted: #565C66;
+  --bull: #3FA789;
+  --bull-soft: #2D7A66;
+  --bull-glow: rgba(63,167,137,0.15);
+  --bear: #D1584C;
+  --bear-soft: #A84036;
+  --bear-glow: rgba(209,88,76,0.15);
+  --shadow: rgba(0,0,0,0.4);
+  --shadow-sm: rgba(0,0,0,0.2);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
 
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
-  .card-title { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gold); margin-bottom:10px; }
-  .toggle-btn { width:100%; background:var(--panel); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-size:13px; }
-  .guide-body { padding:0 4px 4px; font-size:13px; line-height:1.9; color:var(--text-dim); }
-  .guide-body b { color: var(--text); }
+[data-theme="light"] {
+  --bg: #F0F1F5;
+  --bg-elevated: #FFFFFF;
+  --panel: #FFFFFF;
+  --panel-hover: #F5F6F8;
+  --line: #E2E4E9;
+  --line-strong: #D0D3DA;
+  --gold: #B8941D;
+  --gold-bright: #D4A520;
+  --gold-soft: #9A7E2A;
+  --gold-dim: #C4B896;
+  --text: #1A1D23;
+  --text-secondary: #4A4F5A;
+  --text-dim: #6B7280;
+  --text-muted: #9CA3AF;
+  --bull: #059669;
+  --bull-soft: #047857;
+  --bull-glow: rgba(5,150,105,0.1);
+  --bear: #DC2626;
+  --bear-soft: #B91C1C;
+  --bear-glow: rgba(220,38,38,0.1);
+  --shadow: rgba(0,0,0,0.08);
+  --shadow-sm: rgba(0,0,0,0.04);
+}
 
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (max-width:720px) { .grid2 { grid-template-columns:1fr; } }
-  textarea {
-    width:100%; min-height:150px; resize:vertical; box-sizing:border-box;
-    background:var(--panel2); border:1px solid var(--line); border-radius:6px;
-    color:var(--text); font-size:13px; padding:10px; outline:none;
-  }
-  textarea.mono { font-size:12.5px; }
-  textarea::placeholder { color:#565C66; }
+/* ============ BASE ============ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.4s ease, color 0.4s ease;
+  padding-bottom: 60px;
+}
 
-  .upload-row { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .file-btn { background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:8px 14px; font-size:12.5px; cursor:pointer; color:var(--text); }
-  .file-btn input { display:none; }
-  #imgPreview { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
-  .thumb { position:relative; width:84px; }
-  .thumb img { width:84px; height:84px; object-fit:cover; border-radius:6px; border:1px solid var(--line); }
-  .thumb button { position:absolute; top:-6px; left:-6px; width:20px; height:20px; border-radius:50%; background:var(--bear); border:none; color:#fff; font-size:12px; cursor:pointer; }
-  .hint { font-size:11.5px; color:var(--text-dim); margin-top:10px; }
+/* ============ UTILITIES ============ */
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-serif); }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
+.hidden { display: none !important; }
+.fade-in { animation: fadeIn 0.5s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(201,162,39,0); }
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
+@keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
 
-  .error { color:var(--bear); font-size:13px; margin-top:12px; text-align:center; }
+/* ============ TOP BAR ============ */
+.top-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(11,13,16,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  transition: var(--transition);
+}
+[data-theme="light"] .top-bar { background: rgba(240,241,245,0.9); }
+.top-bar-inner {
+  max-width: 1000px; margin: 0 auto; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.top-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-serif); font-size: 17px; font-weight: 700; color: var(--gold);
+}
+.top-logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: var(--bg); display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px;
+}
+.top-controls {
+  display: flex; align-items: center; gap: 8px;
+}
+.ctrl-btn {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--text-dim); padding: 7px 12px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: var(--transition);
+}
+.ctrl-btn:hover { background: var(--panel-hover); color: var(--text); border-color: var(--line-strong); }
+.ctrl-btn.active { background: var(--gold-dim); color: var(--gold-bright); border-color: var(--gold-soft); }
 
-  .auto-card { background:linear-gradient(180deg, #171B21, #12151A); border:1px solid var(--gold-soft); border-radius:10px; padding:20px; margin-bottom:20px; text-align:center; }
-  .auto-title { font-family:Georgia, serif; font-size:17px; margin-bottom:4px; }
-  .auto-sub { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
-  #autoBtn { background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:14px 36px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
-  #autoBtn:disabled { background:var(--gold-soft); cursor:default; }
-  .sources-box { margin-top:16px; text-align:right; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:12px; color:var(--text-dim); display:none; }
-  .sources-box b { color:var(--text); }
-  .sources-box .src-line { margin-bottom:4px; }
-  .divider-or { display:flex; align-items:center; gap:10px; color:var(--text-dim); font-size:12px; margin:22px 0; }
-  .divider-or::before, .divider-or::after { content:""; flex:1; height:1px; background:var(--line); }
+/* ============ CARDS ============ */
+.card {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 16px; transition: var(--transition);
+}
+.card:hover { border-color: var(--line-strong); }
+.card-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--gold); margin-bottom: 12px; font-weight: 600;
+}
+.card-subtitle { font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
 
-  .analyze-wrap { display:flex; justify-content:center; margin-top:18px; }
-  #analyzeBtn { background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:12px 32px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; }
-  #analyzeBtn:disabled { background:var(--gold-soft); cursor:default; }
-  .spin { animation: spin 1s linear infinite; display:inline-block; }
-  @keyframes spin { from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+/* ============ BUTTONS ============ */
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: var(--bg); border: none; border-radius: var(--radius-sm);
+  padding: 12px 28px; font-size: 14px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: var(--transition); box-shadow: 0 2px 8px rgba(201,162,39,0.25);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(201,162,39,0.35); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-secondary {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--text-secondary); padding: 8px 16px; font-size: 13px; cursor: pointer;
+  transition: var(--transition);
+}
+.btn-secondary:hover { background: var(--panel-hover); border-color: var(--line-strong); }
 
-  #resultCard { display:none; margin-top:26px; }
-  .result-head { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; }
-  .trend-line { display:flex; align-items:center; gap:8px; }
-  .trend-text { font-family:Georgia, serif; font-size:24px; }
-  .conf-badge { font-size:11px; color:var(--text-dim); border:1px solid var(--line); border-radius:4px; padding:2px 8px; }
-  .summary { font-size:14.5px; line-height:1.9; margin-top:10px; }
-  .split { background:var(--panel2); border-radius:8px; padding:14px; }
-  .split-title { font-size:12px; color:var(--gold); margin-bottom:6px; }
-  .split-body { font-size:13.5px; line-height:1.8; color:var(--text-dim); }
-  ul.list { margin:0; padding-inline-start:18px; font-size:13.5px; line-height:1.9; }
-  .chip { font-family: ui-monospace, monospace; font-size:13px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; padding:3px 10px; display:inline-block; margin:2px; }
+/* ============ TOGGLE BUTTON ============ */
+.toggle-btn {
+  width: 100%; background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius);
+  color: var(--text); padding: 14px 18px; display: flex; justify-content: space-between;
+  align-items: center; cursor: pointer; font-size: 13px; transition: var(--transition);
+}
+.toggle-btn:hover { background: var(--panel-hover); }
 
-  .hist-item { background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
-  .hist-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .hist-actions { display:flex; align-items:center; gap:8px; }
+/* ============ FORMS ============ */
+input, select, textarea {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--text); padding: 10px 12px; font-size: 13px; outline: none;
+  transition: var(--transition); width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-dim); }
+input::placeholder { color: var(--text-muted); }
+label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; font-weight: 500; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
 
-  .current-situation { background:linear-gradient(180deg, rgba(201,162,39,0.08), transparent); border-right:3px solid var(--gold); border-radius:6px; padding:12px 16px; margin-top:14px; font-size:14px; line-height:1.9; }
-  .scenario-box { border-radius:8px; padding:14px; }
-  .scenario-bull { background:rgba(63,167,137,0.08); border:1px solid rgba(63,167,137,0.3); }
-  .scenario-bear { background:rgba(209,88,76,0.08); border:1px solid rgba(209,88,76,0.3); }
-  .scenario-title { font-size:12.5px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-  .invalidation-line { margin-top:12px; font-size:12.5px; color:var(--text-dim); background:var(--panel2); border-radius:6px; padding:8px 12px; }
-  .invalidation-line b { color:var(--gold); font-family: ui-monospace, monospace; }
+/* ============ GRID ============ */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 720px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
 
-  .usage-bar { font-size:12px; color:var(--text-dim); margin-top:10px; }
-  .usage-bar.limit-reached { color:var(--bear); }
+/* ============ CHIPS & BADGES ============ */
+.chip {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 4px 10px; display: inline-block; margin: 3px; transition: var(--transition);
+}
+.chip:hover { border-color: var(--gold-soft); }
+.badge {
+  padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.badge.bull { background: var(--bull-glow); color: var(--bull); }
+.badge.bear { background: var(--bear-glow); color: var(--bear); }
+.badge.neutral { background: rgba(142,147,160,0.1); color: var(--text-dim); }
 
-  /* Black-Scholes specific styles */
-  .bs-card { background:linear-gradient(180deg, rgba(201,162,39,0.06), transparent); border:1px solid rgba(201,162,39,0.25); border-radius:10px; padding:16px; margin-top:16px; }
-  .bs-header { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gold); margin-bottom:10px; font-weight:700; }
-  .bs-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  @media (max-width:720px) { .bs-grid { grid-template-columns:1fr; } }
-  .bs-item { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px 12px; }
-  .bs-label { font-size:11px; color:var(--text-dim); margin-bottom:3px; }
-  .bs-value { font-family: ui-monospace, monospace; font-size:14px; color:var(--gold); }
-  .bs-note { font-size:11.5px; color:var(--text-dim); margin-top:8px; line-height:1.7; }
-  .bs-recommendation { background:rgba(63,167,137,0.1); border:1px solid rgba(63,167,137,0.3); border-radius:6px; padding:10px 14px; margin-top:12px; font-size:13.5px; color:var(--text); }
-  .bs-recommendation.sell { background:rgba(209,88,76,0.1); border-color:rgba(209,88,76,0.3); }
-  .bs-recommendation.wait { background:rgba(142,147,160,0.1); border-color:rgba(142,147,160,0.3); }
+/* ============ GAUGE ============ */
+.gauge-wrap { display: flex; justify-content: center; margin: 16px 0; }
 
-  /* Landing page */
-  .landing { max-width: 980px; margin: 0 auto; }
-  .hero { text-align:center; padding:50px 16px 40px; }
-  .hero-badge { display:inline-block; background:var(--panel2); border:1px solid var(--gold-soft); color:var(--gold); font-size:11px; padding:4px 12px; border-radius:20px; margin-bottom:18px; font-family:ui-monospace,monospace; }
-  .hero h1 { font-family:Georgia,serif; font-size:34px; margin:0 0 14px; line-height:1.3; }
-  .hero p { font-size:15px; color:var(--text-dim); max-width:600px; margin:0 auto 26px; line-height:1.9; }
-  .cta-btn { background:var(--gold); color:#0B0D10; border:none; border-radius:8px; padding:14px 38px; font-size:15px; font-weight:700; cursor:pointer; }
-  .hero-svg { max-width:320px; margin:0 auto 30px; display:block; }
+/* ============ TOAST ============ */
+.toast-container {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 20px; font-size: 13px; color: var(--text);
+  box-shadow: 0 8px 32px var(--shadow); pointer-events: auto;
+  animation: slideDown 0.3s ease; max-width: 420px; text-align: center;
+}
+.toast.error { border-color: var(--bear); color: var(--bear); }
+.toast.success { border-color: var(--bull); color: var(--bull); }
 
-  .stats-row { display:flex; justify-content:center; gap:40px; flex-wrap:wrap; padding:26px 16px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:30px 0; }
-  .stat-item { text-align:center; }
-  .stat-num { font-family:Georgia,serif; font-size:28px; color:var(--gold); }
-  .stat-label { font-size:12px; color:var(--text-dim); margin-top:4px; }
+/* ============ LANDING PAGE ============ */
+.landing { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
+.hero { text-align: center; padding: 60px 16px 40px; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel); border: 1px solid var(--gold-dim);
+  color: var(--gold); font-size: 11px; padding: 5px 14px;
+  border-radius: 20px; margin-bottom: 20px; font-family: var(--font-mono);
+}
+.hero h1 { font-family: var(--font-serif); font-size: 36px; margin: 0 0 16px; line-height: 1.25; }
+.hero p { font-size: 15.5px; color: var(--text-dim); max-width: 580px; margin: 0 auto 28px; line-height: 1.85; }
+.hero-svg { max-width: 340px; margin: 0 auto 32px; display: block; }
 
-  .features-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 16px 40px; }
-  @media (max-width:720px) { .features-grid { grid-template-columns:1fr; } }
-  .feature-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; }
-  .feature-icon { font-size:24px; margin-bottom:10px; }
-  .feature-title { font-size:14.5px; font-weight:700; margin-bottom:6px; }
-  .feature-desc { font-size:13px; color:var(--text-dim); line-height:1.8; }
+.stats-row {
+  display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+  padding: 28px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 32px 0;
+}
+.stat-item { text-align: center; }
+.stat-num { font-family: var(--font-serif); font-size: 30px; color: var(--gold); animation: countUp 0.6s ease; }
+.stat-label { font-size: 12px; color: var(--text-dim); margin-top: 5px; }
 
-  .about-section { padding:10px 16px 40px; text-align:center; }
-  .about-section h2 { font-family:Georgia,serif; font-size:22px; margin-bottom:14px; }
-  .about-section p { font-size:14px; color:var(--text-dim); line-height:2; max-width:700px; margin:0 auto; }
+.features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 0 0 40px; }
+@media (max-width: 720px) { .features-grid { grid-template-columns: 1fr; } }
+.feature-card {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px; transition: var(--transition);
+}
+.feature-card:hover { border-color: var(--gold-dim); transform: translateY(-2px); box-shadow: 0 4px 20px var(--shadow-sm); }
+.feature-icon { font-size: 26px; margin-bottom: 10px; }
+.feature-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.feature-desc { font-size: 13px; color: var(--text-dim); line-height: 1.8; }
 
-  .landing-footer { text-align:center; padding:20px 16px 40px; }
-  .landing-disclaimer { font-size:11px; color:var(--text-dim); max-width:600px; margin:16px auto 0; line-height:1.8; }
-  select.outcome { background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:4px; font-size:11px; padding:3px 6px; }
-  .del-btn { background:none; border:none; cursor:pointer; color:var(--text-dim); }
-  .stats-bar { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:12px; font-size:12.5px; color:var(--text-dim); }
-  .stats-bar b { color:var(--text); }
+.about-section { padding: 10px 0 40px; text-align: center; }
+.about-section h2 { font-family: var(--font-serif); font-size: 24px; margin-bottom: 14px; }
+.about-section p { font-size: 14.5px; color: var(--text-dim); line-height: 2; max-width: 680px; margin: 0 auto; }
 
-  footer { text-align:center; margin-top:26px; font-size:11px; color:var(--text-dim); }
+.landing-footer { text-align: center; padding: 20px 0 40px; }
+.landing-disclaimer { font-size: 11.5px; color: var(--text-dim); max-width: 600px; margin: 18px auto 0; line-height: 1.8; }
 
-  /* Auth */
-  .auth-wrap { max-width: 380px; margin: 60px auto; }
-  .auth-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:24px; }
-  .auth-title { font-family:Georgia, serif; font-size:19px; text-align:center; margin-bottom:18px; }
-  .auth-field { margin-bottom:12px; }
-  .auth-field label { display:block; font-size:12px; color:var(--text-dim); margin-bottom:5px; }
-  .auth-field input { width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:6px; color:var(--text); font-size:13px; padding:10px; outline:none; box-sizing:border-box; }
-  .auth-btn { width:100%; background:var(--gold); color:#0B0D10; border:none; border-radius:6px; padding:11px; font-size:14px; font-weight:700; cursor:pointer; margin-top:6px; }
-  .auth-switch { text-align:center; margin-top:14px; font-size:12.5px; color:var(--text-dim); }
-  .auth-switch a { color:var(--gold); cursor:pointer; text-decoration:underline; }
-  .auth-msg { font-size:12.5px; text-align:center; margin-top:10px; min-height:16px; }
-  .auth-msg.err { color:var(--bear); }
-  .auth-msg.ok { color:var(--bull); }
+/* ============ AUTH ============ */
+.auth-wrap { max-width: 400px; margin: 80px auto; padding: 0 16px; }
+.auth-card {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px;
+}
+.auth-title { font-family: var(--font-serif); font-size: 21px; text-align: center; margin-bottom: 22px; }
+.auth-field { margin-bottom: 14px; }
+.auth-btn { width: 100%; margin-top: 6px; }
+.auth-switch { text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-dim); }
+.auth-switch a { color: var(--gold); cursor: pointer; text-decoration: underline; }
+.auth-msg { font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px; }
+.auth-msg.err { color: var(--bear); }
+.auth-msg.ok { color: var(--bull); }
 
-  .pending-card { max-width: 460px; margin: 60px auto; background:var(--panel); border:1px solid var(--gold-soft); border-radius:10px; padding:28px; text-align:center; }
-  .pending-card h2 { font-family:Georgia, serif; font-size:19px; margin-bottom:10px; }
-  .pending-card p { font-size:13.5px; line-height:1.9; color:var(--text-dim); }
+.pending-card {
+  max-width: 480px; margin: 80px auto; background: var(--bg-elevated);
+  border: 1px solid var(--gold-dim); border-radius: var(--radius); padding: 32px; text-align: center;
+}
+.pending-card h2 { font-family: var(--font-serif); font-size: 21px; margin-bottom: 12px; }
+.pending-card p { font-size: 14px; line-height: 1.9; color: var(--text-dim); }
 
-  .user-bar { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:6px; font-size:12px; color:var(--text-dim); }
-  .logout-btn { background:none; border:1px solid var(--line); color:var(--text-dim); border-radius:5px; padding:4px 10px; cursor:pointer; font-size:12px; }
+/* ============ APP CONTENT ============ */
+.user-bar {
+  display: flex; justify-content: flex-end; align-items: center; gap: 12px;
+  margin-bottom: 10px; font-size: 12.5px; color: var(--text-dim);
+}
+
+/* Auto analyze card */
+.auto-card {
+  background: linear-gradient(180deg, rgba(201,162,39,0.06), transparent);
+  border: 1px solid var(--gold-dim); border-radius: 12px;
+  padding: 24px; margin-bottom: 20px; text-align: center;
+}
+.auto-title { font-family: var(--font-serif); font-size: 19px; margin-bottom: 6px; }
+.auto-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 18px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+.sources-box {
+  margin-top: 18px; text-align: left;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; font-size: 12px; color: var(--text-dim); display: none;
+}
+.sources-box b { color: var(--text); }
+.sources-box .src-line { margin-bottom: 5px; }
+
+/* Result card */
+.result-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 6px; }
+.trend-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.trend-text { font-family: var(--font-serif); font-size: 26px; }
+.conf-badge { font-size: 11.5px; color: var(--text-dim); border: 1px solid var(--line); border-radius: 4px; padding: 3px 10px; }
+.summary { font-size: 14.5px; line-height: 1.9; margin-top: 12px; color: var(--text-secondary); }
+
+.split { background: var(--panel); border-radius: var(--radius); padding: 16px; transition: var(--transition); }
+.split:hover { border: 1px solid var(--line-strong); }
+.split-title { font-size: 12px; color: var(--gold); margin-bottom: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.split-body { font-size: 13.5px; line-height: 1.85; color: var(--text-dim); }
+
+.current-situation {
+  background: linear-gradient(180deg, rgba(201,162,39,0.06), transparent);
+  border-right: 3px solid var(--gold); border-radius: var(--radius-sm);
+  padding: 14px 18px; margin-top: 16px; font-size: 14px; line-height: 1.9; color: var(--text-secondary);
+}
+
+.scenario-box { border-radius: var(--radius); padding: 16px; }
+.scenario-bull { background: var(--bull-glow); border: 1px solid rgba(63,167,137,0.25); }
+.scenario-bear { background: var(--bear-glow); border: 1px solid rgba(209,88,76,0.25); }
+.scenario-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+
+.invalidation-line {
+  margin-top: 14px; font-size: 13px; color: var(--text-dim);
+  background: var(--panel); border-radius: var(--radius-sm); padding: 10px 14px;
+}
+.invalidation-line b { color: var(--gold); font-family: var(--font-mono); }
+
+ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height: 1.9; }
+
+/* Black-Scholes Card */
+.bs-card {
+  background: linear-gradient(180deg, rgba(201,162,39,0.05), transparent);
+  border: 1px solid var(--gold-dim); border-radius: 12px;
+  padding: 20px; margin-top: 18px; animation: fadeIn 0.5s ease;
+}
+.bs-header { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gold); margin-bottom: 14px; font-weight: 700; }
+.bs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 720px) { .bs-grid { grid-template-columns: repeat(2, 1fr); } }
+.bs-item { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; transition: var(--transition); }
+.bs-item:hover { border-color: var(--gold-dim); }
+.bs-label { font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+.bs-value { font-family: var(--font-mono); font-size: 15px; color: var(--gold); font-weight: 600; }
+.bs-note { font-size: 12.5px; color: var(--text-dim); margin-top: 12px; line-height: 1.75; }
+.bs-recommendation {
+  background: var(--bull-glow); border: 1px solid rgba(63,167,137,0.3);
+  border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 14px;
+  font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px;
+}
+.bs-recommendation.sell { background: var(--bear-glow); border-color: rgba(209,88,76,0.3); }
+.bs-recommendation.wait { background: rgba(142,147,160,0.08); border-color: rgba(142,147,160,0.25); }
+
+/* BS Calculator Widget */
+.bs-calc-widget {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px; margin-top: 16px;
+}
+.bs-calc-widget h4 { font-size: 13px; color: var(--gold); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.bs-calc-result {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;
+}
+@media (max-width: 600px) { .bs-calc-result { grid-template-columns: repeat(2, 1fr); } }
+.bs-calc-output {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 10px; text-align: center;
+}
+.bs-calc-output .label { font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
+.bs-calc-output .value { font-family: var(--font-mono); font-size: 16px; color: var(--gold); font-weight: 700; }
+
+/* Probability Calculator */
+.prob-calc { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.prob-result-bar {
+  height: 28px; border-radius: var(--radius-sm); overflow: hidden;
+  background: var(--bg); display: flex; margin-top: 10px;
+}
+.prob-bar-segment {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: #fff; transition: width 0.6s ease;
+}
+
+/* Quick Stats Bar */
+.quick-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
+}
+@media (max-width: 720px) { .quick-stats { grid-template-columns: repeat(2, 1fr); } }
+.qs-item {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px; text-align: center; transition: var(--transition);
+}
+.qs-item:hover { border-color: var(--gold-dim); }
+.qs-label { font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
+.qs-value { font-family: var(--font-mono); font-size: 16px; color: var(--gold); font-weight: 700; }
+.qs-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+/* History */
+.hist-item {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px 16px; display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;
+  transition: var(--transition);
+}
+.hist-item:hover { border-color: var(--line-strong); }
+.hist-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hist-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Usage bar */
+.usage-bar { font-size: 12px; color: var(--text-dim); margin-top: 12px; text-align: center; }
+.usage-bar.limit-reached { color: var(--bear); font-weight: 600; }
+
+/* Footer */
+footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--text-dim); padding: 0 16px; }
+
+/* Animations for loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--panel) 25%, var(--line) 50%, var(--panel) 75%);
+  background-size: 200% 100%; animation: skeleton 1.5s infinite;
+  border-radius: 4px; height: 16px; margin-bottom: 8px;
+}
+@keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Range visualizer */
+.range-visual {
+  position: relative; height: 40px; background: var(--panel); border-radius: var(--radius-sm);
+  margin: 12px 0; overflow: hidden; border: 1px solid var(--line);
+}
+.range-zone {
+  position: absolute; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--bear-glow), transparent, var(--bull-glow));
+}
+.range-current {
+  position: absolute; top: -4px; bottom: -4px; width: 3px;
+  background: var(--gold); border-radius: 2px; z-index: 2;
+  box-shadow: 0 0 8px var(--gold);
+}
+.range-labels {
+  display: flex; justify-content: space-between; font-size: 11px;
+  color: var(--text-dim); font-family: var(--font-mono); margin-top: 4px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .hero h1 { font-size: 26px; }
+  .trend-text { font-size: 20px; }
+  .top-bar-inner { padding: 8px 12px; }
+  .ctrl-btn { padding: 6px 10px; font-size: 12px; }
+}
 </style>
 <base target="_blank">
 </head>
+
 <body>
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-logo">
+      <div class="top-logo-icon">Au</div>
+      <span data-i18n="brand">مكتب تحليل الذهب</span>
+    </div>
+    <div class="top-controls">
+      <button class="ctrl-btn" id="langBtn" title="Switch Language">
+        <span>🌐</span> <span id="langLabel">English</span>
+      </button>
+      <button class="ctrl-btn" id="themeBtn" title="Toggle Theme">
+        <span id="themeIcon">☀️</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
-  <header>
-    <div class="logo">Au</div>
-    <div>
-      <h1>مكتب تحليل الذهب</h1>
-      <div class="subtitle mono">XAUUSD · COT INTELLIGENCE · WEEKLY OUTLOOK</div>
-    </div>
-  </header>
 
-  <!-- Landing page -->
-  <div id="landingPage" class="landing" style="display:none;">
-    <div class="hero">
-      <div class="hero-badge">XAUUSD · AI-POWERED ANALYSIS</div>
-      <svg class="hero-svg" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg">
-        <polyline points="10,90 50,70 90,80 130,40 170,55 210,20 250,35 310,10" fill="none" stroke="#C9A227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="310" cy="10" r="5" fill="#C9A227"/>
-        <line x1="10" y1="105" x2="310" y2="105" stroke="#242A32" stroke-width="1"/>
-      </svg>
-      <h1>تحليل الذهب بالذكاء الاصطناعي، بضغطة زر وحدة</h1>
-      <p>سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، التحليل الفني الكلاسيكي (RSI, MACD, MAs, Bollinger)، ونماذج Black-Scholes الاحتمالية — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية وتوصية رقمية.</p>
-      <button class="cta-btn" id="landingCtaBtn">ابدأ الآن</button>
+<!-- ==================== LANDING PAGE ==================== -->
+<div id="landingPage" class="landing" style="display:none;">
+  <div class="hero">
+    <div class="hero-badge">
+      <span>⚡</span> <span data-i18n="heroBadge">XAUUSD · AI-POWERED ANALYSIS</span>
     </div>
+    <svg class="hero-svg" viewBox="0 0 340 130" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#8A7332"/>
+          <stop offset="50%" style="stop-color:#C9A227"/>
+          <stop offset="100%" style="stop-color:#E8C547"/>
+        </linearGradient>
+      </defs>
+      <polyline points="10,95 60,75 100,85 150,45 190,60 230,25 270,40 330,15" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="330" cy="15" r="5" fill="#C9A227"/>
+      <line x1="10" y1="115" x2="330" y2="115" stroke="var(--line)" stroke-width="1"/>
+      <text x="10" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W1</text>
+      <text x="170" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W2</text>
+      <text x="310" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W3</text>
+    </svg>
+    <h1 data-i18n="heroTitle">تحليل الذهب بالذكاء الاصطناعي، بضغطة زر وحدة</h1>
+    <p data-i18n="heroDesc">سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، التحليل الفني الكلاسيكي، ونماذج Black-Scholes الاحتمالية — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية وتوصية رقمية.</p>
+    <button class="btn-primary" id="landingCtaBtn" data-i18n="ctaStart">ابدأ الآن</button>
+  </div>
 
-    <div class="stats-row">
-      <div class="stat-item">
-        <div class="stat-num" id="statSubscribers">—</div>
-        <div class="stat-label">مشترك نشط</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num" id="statAccuracy">—</div>
-        <div class="stat-label">نسبة النجاح</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">5</div>
-        <div class="stat-label">محاور تحليل مدمجة</div>
-      </div>
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num" id="statSubscribers">—</div>
+      <div class="stat-label" data-i18n="statSubscribers">مشترك نشط</div>
     </div>
-
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <div class="feature-title">بيانات COT رسمية</div>
-        <div class="feature-desc">تمركز المضاربين والمؤسسات مباشرة من CFTC، لقراءة نفسية السوق الحقيقية.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📰</div>
-        <div class="feature-title">أخبار مستهدفة</div>
-        <div class="feature-desc">فلترة ذكية لأهم الأخبار المؤثرة فعلياً على الذهب والفائدة والدولار.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📅</div>
-        <div class="feature-title">تقويم اقتصادي</div>
-        <div class="feature-desc">أقرب الأحداث عالية الأهمية القادمة قبل ما تفاجئك بتقلبات مفاجئة.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📐</div>
-        <div class="feature-title">Black-Scholes احتمالي</div>
-        <div class="feature-desc">التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.</div>
-      </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statAccuracy">—</div>
+      <div class="stat-label" data-i18n="statAccuracy">نسبة النجاح</div>
     </div>
-
-    <div class="about-section">
-      <h2>ليش هالموقع؟</h2>
-      <p>بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
-    </div>
-
-    <div class="landing-footer">
-      <button class="cta-btn" id="landingCtaBtn2">ابدأ الآن</button>
-      <div class="landing-disclaimer">هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.</div>
+    <div class="stat-item">
+      <div class="stat-num">5</div>
+      <div class="stat-label" data-i18n="statPillars">محاور تحليل مدمجة</div>
     </div>
   </div>
 
-  <!-- Auth gate -->
-  <div id="authGate" class="auth-wrap" style="display:none;">
-    <div class="auth-card">
-      <div class="auth-title" id="authTitle">تسجيل الدخول</div>
-      <div class="auth-field">
-        <label>البريد الإلكتروني</label>
-        <input type="email" id="authEmail" placeholder="you@example.com" />
-      </div>
-      <div class="auth-field">
-        <label>كلمة السر</label>
-        <input type="password" id="authPassword" placeholder="••••••••" />
-      </div>
-      <button class="auth-btn" id="authSubmitBtn">دخول</button>
-      <div class="auth-switch">
-        <span id="authSwitchText">ما عندك حساب؟</span> <a id="authSwitchLink">إنشاء حساب جديد</a>
-      </div>
-      <div class="auth-msg" id="authMsg"></div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title" data-i18n="featCot">بيانات COT رسمية</div>
+      <div class="feature-desc" data-i18n="featCotDesc">تمركز المضاربين والمؤسسات مباشرة من CFTC، لقراءة نفسية السوق الحقيقية.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📰</div>
+      <div class="feature-title" data-i18n="featNews">أخبار مستهدفة</div>
+      <div class="feature-desc" data-i18n="featNewsDesc">فلترة ذكية لأهم الأخبار المؤثرة فعلياً على الذهب والفائدة والدولار.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title" data-i18n="featCalendar">تقويم اقتصادي</div>
+      <div class="feature-desc" data-i18n="featCalendarDesc">أقرب الأحداث عالية الأهمية القادمة قبل ما تفاجئك بتقلبات مفاجئة.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <div class="feature-title" data-i18n="featBS">Black-Scholes احتمالي</div>
+      <div class="feature-desc" data-i18n="featBSDesc">التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.</div>
     </div>
   </div>
 
-  <!-- Pending activation -->
-  <div id="pendingCard" class="pending-card" style="display:none;">
-    <h2>⏳ حسابك بانتظار التفعيل</h2>
-    <p>سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.</p>
-    <button class="logout-btn" id="pendingLogoutBtn" style="margin-top:14px;">تسجيل خروج</button>
+  <div class="about-section">
+    <h2 data-i18n="aboutTitle">ليش هالموقع؟</h2>
+    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
   </div>
 
-  <div id="appContent" style="display:none;">
-    <div class="user-bar">
-      <span id="userEmailLabel"></span>
-      <button class="logout-btn" id="logoutBtn">تسجيل خروج</button>
-    </div>
+  <div class="landing-footer">
+    <button class="btn-primary" id="landingCtaBtn2" data-i18n="ctaStart">ابدأ الآن</button>
+    <div class="landing-disclaimer" data-i18n="disclaimer">هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.</div>
+  </div>
+</div>
 
-  <!-- Auto analyze -->
+<!-- ==================== AUTH GATE ==================== -->
+<div id="authGate" class="auth-wrap" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-title" id="authTitle" data-i18n="authLogin">تسجيل الدخول</div>
+    <div class="auth-field">
+      <label data-i18n="labelEmail">البريد الإلكتروني</label>
+      <input type="email" id="authEmail" placeholder="you@example.com" />
+    </div>
+    <div class="auth-field">
+      <label data-i18n="labelPassword">كلمة السر</label>
+      <input type="password" id="authPassword" placeholder="••••••••" />
+    </div>
+    <button class="btn-primary auth-btn" id="authSubmitBtn" data-i18n="btnLogin">دخول</button>
+    <div class="auth-switch">
+      <span id="authSwitchText" data-i18n="noAccount">ما عندك حساب؟</span>
+      <a id="authSwitchLink" data-i18n="linkSignup">إنشاء حساب جديد</a>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- ==================== PENDING CARD ==================== -->
+<div id="pendingCard" class="pending-card" style="display:none;">
+  <h2 id="pendingTitle">⏳ حسابك بانتظار التفعيل</h2>
+  <p id="pendingText">سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.</p>
+  <button class="btn-secondary" id="pendingLogoutBtn" style="margin-top:16px;" data-i18n="btnLogout">تسجيل خروج</button>
+</div>
+
+<!-- ==================== APP CONTENT ==================== -->
+<div id="appContent" style="display:none;">
+  <div class="user-bar">
+    <span id="userEmailLabel"></span>
+    <button class="btn-secondary" id="logoutBtn" data-i18n="btnLogout">تسجيل خروج</button>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats" id="quickStats" style="display:none;">
+    <div class="qs-item">
+      <div class="qs-label" data-i18n="qsPrice">السعر الحالي</div>
+      <div class="qs-value" id="qsPriceVal">—</div>
+      <div class="qs-sub" id="qsPriceTime"></div>
+    </div>
+    <div class="qs-item">
+      <div class="qs-label" data-i18n="qsHV">التقلب التاريخي</div>
+      <div class="qs-value" id="qsHVVal">—</div>
+      <div class="qs-sub" data-i18n="qsAnnual">سنوي</div>
+    </div>
+    <div class="qs-item">
+      <div class="qs-label" data-i18n="qsMove7d">الحركة المتوقعة</div>
+      <div class="qs-value" id="qsMoveVal">—</div>
+      <div class="qs-sub" data-i18n="qs7Days">7 أيام</div>
+    </div>
+    <div class="qs-item">
+      <div class="qs-label" data-i18n="qsRange">النطاق المتوقع</div>
+      <div class="qs-value" id="qsRangeVal">—</div>
+      <div class="qs-sub" data-i18n="qs68Conf">ثقة 68%</div>
+    </div>
+  </div>
+
+  <!-- Auto Analyze -->
   <div class="auto-card">
-    <div class="auto-title">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية (RSI, MACD, MAs, Bollinger) + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.</div>
-    <button id="autoBtn">
+    <div class="auto-title" data-i18n="autoTitle">⚡ تحليل تلقائي كامل</div>
+    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.</div>
+    <button class="btn-primary" id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
-      <span id="autoBtnLabel">حلّل الآن تلقائياً</span>
+      <span id="autoBtnLabel" data-i18n="btnAnalyze">حلّل الآن تلقائياً</span>
     </button>
     <div class="sources-box" id="sourcesBox"></div>
   </div>
 
-  <div class="error" id="errorBox" style="display:none;"></div>
-
-  <!-- Result -->
-  <div class="card" id="resultCard">
+  <!-- Result Card -->
+  <div class="card" id="resultCard" style="display:none;">
     <div class="result-head">
       <div>
         <div class="mono" style="font-size:11px; color:var(--text-dim); margin-bottom:4px;" id="resDate"></div>
@@ -302,62 +626,136 @@
           <span class="conf-badge" id="resConf"></span>
         </div>
       </div>
-      <svg id="gauge" viewBox="0 0 220 130" width="220" height="130"></svg>
+      <svg id="gauge" viewBox="0 0 220 130" width="200" height="118"></svg>
     </div>
     <p class="summary" id="resSummary"></p>
     <div class="current-situation" id="resCurrentSituation" style="display:none;"></div>
+
     <div class="grid2">
-      <div class="split"><div class="split-title mono">قراءة COT</div><div class="split-body" id="resCot"></div></div>
-      <div class="split"><div class="split-title mono">قراءة الأخبار</div><div class="split-body" id="resNews"></div></div>
+      <div class="split"><div class="split-title mono">📊 <span data-i18n="readCot">قراءة COT</span></div><div class="split-body" id="resCot"></div></div>
+      <div class="split"><div class="split-title mono">📰 <span data-i18n="readNews">قراءة الأخبار</span></div><div class="split-body" id="resNews"></div></div>
     </div>
     <div class="grid2" style="margin-top:16px;">
-      <div class="split"><div class="split-title mono">التقويم الاقتصادي القادم</div><div class="split-body" id="resCalendar"></div></div>
-      <div class="split"><div class="split-title mono">التحليل الفني الكلاسيكي</div><div class="split-body" id="resTechnical"></div></div>
+      <div class="split"><div class="split-title mono">📅 <span data-i18n="readCalendar">التقويم الاقتصادي القادم</span></div><div class="split-body" id="resCalendar"></div></div>
+      <div class="split"><div class="split-title mono">📈 <span data-i18n="readTechnical">التحليل الفني الكلاسيكي</span></div><div class="split-body" id="resTechnical"></div></div>
     </div>
 
-    <!-- Black-Scholes Section -->
+    <!-- Black-Scholes Analysis -->
     <div class="bs-card" id="bsCard" style="display:none;">
-      <div class="bs-header">📐 Black-Scholes — التقلب والاحتماليات</div>
+      <div class="bs-header">📐 <span data-i18n="bsTitle">Black-Scholes — التقلب والاحتماليات</span></div>
       <div class="bs-grid" id="bsGrid"></div>
       <div class="bs-note" id="bsNote"></div>
       <div class="bs-recommendation" id="bsRecommendation" style="display:none;"></div>
     </div>
 
+    <!-- Black-Scholes Interactive Calculator -->
+    <div class="bs-calc-widget" id="bsCalcWidget" style="display:none;">
+      <h4>🧮 <span data-i18n="bsCalcTitle">حاسبة Black-Scholes التفاعلية</span></h4>
+      <div class="form-row">
+        <div>
+          <label data-i18n="labelSpot">السعر الحالي (Spot)</label>
+          <input type="number" id="calcSpot" step="0.01" />
+        </div>
+        <div>
+          <label data-i18n="labelStrike">سعر التنفيذ (Strike)</label>
+          <input type="number" id="calcStrike" step="0.01" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div>
+          <label data-i18n="labelDays">الأيام حتى الاستحقاق</label>
+          <input type="number" id="calcDays" value="7" min="1" />
+        </div>
+        <div>
+          <label data-i18n="labelVol">التقلب السنوي (%)</label>
+          <input type="number" id="calcVol" step="0.1" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div>
+          <label data-i18n="labelRate">معدل الفائدة الخالي من المخاطر (%)</label>
+          <input type="number" id="calcRate" value="4.5" step="0.1" />
+        </div>
+        <div>
+          <label data-i18n="labelType">نوع الخيار</label>
+          <select id="calcType">
+            <option value="call" data-i18n="optCall">شراء (Call)</option>
+            <option value="put" data-i18n="optPut">بيع (Put)</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:14px; width:100%;" id="calcBtn" data-i18n="btnCalc">احسب</button>
+      <div class="bs-calc-result" id="calcResult" style="display:none;"></div>
+    </div>
+
+    <!-- Probability Calculator -->
+    <div class="bs-calc-widget" id="probWidget" style="display:none;">
+      <h4>🎯 <span data-i18n="probTitle">حاسبة الاحتمالية</span></h4>
+      <div class="form-row">
+        <div>
+          <label data-i18n="labelTarget">السعر المستهدف</label>
+          <input type="number" id="probTarget" step="0.01" />
+        </div>
+        <div>
+          <label data-i18n="labelDaysProb">الفترة (أيام)</label>
+          <input type="number" id="probDays" value="7" min="1" />
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:14px; width:100%;" id="probBtn" data-i18n="btnCalcProb">احسب الاحتمالية</button>
+      <div class="prob-calc" id="probResult" style="display:none;">
+        <div class="prob-result-bar" id="probBar"></div>
+        <div class="range-labels">
+          <span data-i18n="probBelow">أقل</span>
+          <span data-i18n="probAbove">أعلى</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Drivers -->
     <div id="driversWrap" style="margin-top:16px;">
-      <div class="split-title mono">أهم المحركات</div>
+      <div class="split-title mono">🔑 <span data-i18n="keyDriversTitle">أهم المحركات</span></div>
       <ul class="list" id="driversList"></ul>
     </div>
+
+    <!-- Key Levels -->
     <div class="grid2" id="levelsWrap" style="margin-top:16px;">
       <div>
-        <div class="split-title mono" style="color:var(--bull);">مستويات الدعم</div>
+        <div class="split-title mono" style="color:var(--bull);">🟢 <span data-i18n="supportLevels">مستويات الدعم</span></div>
         <div id="supportChips"></div>
       </div>
       <div>
-        <div class="split-title mono" style="color:var(--bear);">مستويات المقاومة</div>
+        <div class="split-title mono" style="color:var(--bear);">🔴 <span data-i18n="resistanceLevels">مستويات المقاومة</span></div>
         <div id="resistanceChips"></div>
       </div>
     </div>
+
+    <!-- Scenarios -->
     <div class="grid2" id="scenariosWrap" style="margin-top:16px; display:none;">
       <div class="scenario-box scenario-bull">
-        <div class="scenario-title" style="color:var(--bull);">📈 السيناريو الصعودي</div>
+        <div class="scenario-title" style="color:var(--bull);">📈 <span data-i18n="scenarioBull">السيناريو الصعودي</span></div>
         <div id="resScenarioBull" style="font-size:13.5px; line-height:1.8;"></div>
       </div>
       <div class="scenario-box scenario-bear">
-        <div class="scenario-title" style="color:var(--bear);">📉 السيناريو الهبوطي</div>
+        <div class="scenario-title" style="color:var(--bear);">📉 <span data-i18n="scenarioBear">السيناريو الهبوطي</span></div>
         <div id="resScenarioBear" style="font-size:13.5px; line-height:1.8;"></div>
       </div>
     </div>
+
+    <!-- Invalidation -->
     <div class="invalidation-line" id="resInvalidation" style="display:none;"></div>
+
+    <!-- Risks -->
     <div id="risksWrap" style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
-      <div class="split-title mono" style="color:var(--text-dim);">سيناريوهات مخالفة / مخاطر</div>
+      <div class="split-title mono" style="color:var(--text-dim);">⚠️ <span data-i18n="risksTitle">سيناريوهات مخالفة / مخاطر</span></div>
       <ul class="list" id="risksList" style="color:var(--text-dim);"></ul>
     </div>
   </div>
 
   <div class="usage-bar" id="usageBar"></div>
+
   <!-- History -->
-  <button class="toggle-btn" id="histToggle" style="margin-top:22px;">
-    <span>🕘 سجل التوقعات الأسبوعية (<span id="histCount">0</span>)</span>
+  <button class="toggle-btn" id="histToggle" style="margin-top:24px;">
+    <span>🕘 <span data-i18n="historyTitle">سجل التوقعات الأسبوعية</span> (<span id="histCount">0</span>)</span>
     <span id="histArrow">▾</span>
   </button>
   <div id="histBody" style="display:none; margin-top:10px;">
@@ -365,31 +763,374 @@
     <div id="histList"></div>
   </div>
 
-  <footer>هذا التحليل بمساعدة الذكاء الاصطناعي لأغراض تعليمية وليس توصية استثمارية.</footer>
-  </div><!-- /appContent -->
-</div>
+  <footer data-i18n="footer">هذا التحليل بمساعدة الذكاء الاصطناعي لأغراض تعليمية وليس توصية استثمارية.</footer>
+</div><!-- /appContent -->
+
+</div><!-- /wrap -->
 
 <script>
-const C = { bull:"#3FA789", bear:"#D1584C", neutral:"#8E93A0" };
+// ==================== I18N ====================
+const i18n = {
+  ar: {
+    pageTitle: "مكتب تحليل الذهب — COT & News Intelligence",
+    brand: "مكتب تحليل الذهب",
+    heroBadge: "XAUUSD · AI-POWERED ANALYSIS",
+    heroTitle: "تحليل الذهب بالذكاء الاصطناعي، بضغطة زر وحدة",
+    heroDesc: "سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، التحليل الفني الكلاسيكي، ونماذج Black-Scholes الاحتمالية — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية وتوصية رقمية.",
+    ctaStart: "ابدأ الآن",
+    statSubscribers: "مشترك نشط",
+    statAccuracy: "نسبة النجاح",
+    statPillars: "محاور تحليل مدمجة",
+    featCot: "بيانات COT رسمية",
+    featCotDesc: "تمركز المضاربين والمؤسسات مباشرة من CFTC، لقراءة نفسية السوق الحقيقية.",
+    featNews: "أخبار مستهدفة",
+    featNewsDesc: "فلترة ذكية لأهم الأخبار المؤثرة فعلياً على الذهب والفائدة والدولار.",
+    featCalendar: "تقويم اقتصادي",
+    featCalendarDesc: "أقرب الأحداث عالية الأهمية القادمة قبل ما تفاجئك بتقلبات مفاجئة.",
+    featBS: "Black-Scholes احتمالي",
+    featBSDesc: "التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.",
+    aboutTitle: "ليش هالموقع؟",
+    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.",
+    disclaimer: "هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.",
+    authLogin: "تسجيل الدخول",
+    authSignup: "إنشاء حساب جديد",
+    labelEmail: "البريد الإلكتروني",
+    labelPassword: "كلمة السر",
+    btnLogin: "دخول",
+    btnSignup: "إنشاء حساب",
+    noAccount: "ما عندك حساب؟",
+    hasAccount: "عندك حساب أصلاً؟",
+    linkSignup: "إنشاء حساب جديد",
+    linkLogin: "تسجيل الدخول",
+    pendingTitle: "⏳ حسابك بانتظار التفعيل",
+    pendingText: "سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.",
+    pendingExpiredTitle: "⏳ انتهت مدة اشتراكك",
+    pendingExpiredText: "خلصت مدة اشتراكك. تواصل معنا لتجديده وبيرجع الموقع يشتغل معك مباشرة.",
+    btnLogout: "تسجيل خروج",
+    qsPrice: "السعر الحالي",
+    qsHV: "التقلب التاريخي",
+    qsAnnual: "سنوي",
+    qsMove7d: "الحركة المتوقعة",
+    qs7Days: "7 أيام",
+    qsRange: "النطاق المتوقع",
+    qs68Conf: "ثقة 68%",
+    autoTitle: "⚡ تحليل تلقائي كامل",
+    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.",
+    btnAnalyze: "حلّل الآن تلقائياً",
+    readCot: "قراءة COT",
+    readNews: "قراءة الأخبار",
+    readCalendar: "التقويم الاقتصادي القادم",
+    readTechnical: "التحليل الفني الكلاسيكي",
+    bsTitle: "Black-Scholes — التقلب والاحتماليات",
+    bsCalcTitle: "حاسبة Black-Scholes التفاعلية",
+    labelSpot: "السعر الحالي (Spot)",
+    labelStrike: "سعر التنفيذ (Strike)",
+    labelDays: "الأيام حتى الاستحقاق",
+    labelVol: "التقلب السنوي (%)",
+    labelRate: "معدل الفائدة الخالي من المخاطر (%)",
+    labelType: "نوع الخيار",
+    optCall: "شراء (Call)",
+    optPut: "بيع (Put)",
+    btnCalc: "احسب",
+    probTitle: "حاسبة الاحتمالية",
+    labelTarget: "السعر المستهدف",
+    labelDaysProb: "الفترة (أيام)",
+    btnCalcProb: "احسب الاحتمالية",
+    probBelow: "أقل",
+    probAbove: "أعلى",
+    keyDriversTitle: "أهم المحركات",
+    supportLevels: "مستويات الدعم",
+    resistanceLevels: "مستويات المقاومة",
+    scenarioBull: "السيناريو الصعودي",
+    scenarioBear: "السيناريو الهبوطي",
+    invalidationPrefix: "⚠️ مستوى الإبطال:",
+    invalidationSuffix: "— لو انكسر هالمستوى، التوقع الحالي يصير غير صالح ولازم تعاد القراءة.",
+    risksTitle: "سيناريوهات مخالفة / مخاطر",
+    historyTitle: "سجل التوقعات الأسبوعية",
+    footer: "هذا التحليل بمساعدة الذكاء الاصطناعي لأغراض تعليمية وليس توصية استثمارية.",
+    confLabel: "ثقة",
+    usageText: (used, limit) => `استخدمت ${used} من ${limit} تحليلات اليوم.`,
+    usageReached: (limit) => `وصلت للحد اليومي (${limit} تحليلات).`,
+    historyEmpty: "لسا ما في تحليلات محفوظة.",
+    historyEvaluated: (pct, correct, total) => `دقة التوقعات المُقيّمة: <b>${pct}%</b> <span>(${correct} من ${total})</span>`,
+    historyNoEval: "لسا ما في توقعات مُقيّمة — بعد ما تعرف نتيجة الأسبوع الفعلية، اختارها من كل عنصر بالأسفل.",
+    toastLoginSuccess: "تم تسجيل الدخول بنجاح",
+    toastSignupSuccess: "تم إنشاء الحساب! افحص بريدك للتأكيد.",
+    toastAnalyzeError: "صار خطأ أثناء التحليل: ",
+    toastCopied: "تم النسخ!",
+    loading: "جارٍ جلب البيانات والتحليل...",
+    trendBullish: "صعودي",
+    trendBearish: "هبوطي",
+    trendNeutral: "محايد",
+    outcomeUp: "ارتفع",
+    outcomeDown: "انخفض",
+    outcomeFlat: "تذبذب",
+    correct: "✓ صحّت",
+    incorrect: "✗ ما صحّت",
+    daysLeft: (d) => `باقي ${d} يوم على الاشتراك`,
+  },
+  en: {
+    pageTitle: "Gold Analysis Desk — COT & News Intelligence",
+    brand: "Gold Analysis Desk",
+    heroBadge: "XAUUSD · AI-POWERED ANALYSIS",
+    heroTitle: "AI-Powered Gold Analysis, One Click Away",
+    heroDesc: "Live price, official CFTC COT data, key economic news, upcoming calendar, classical technical analysis, and Black-Scholes probability models — all merged into one clear analysis with future scenarios and a numerical recommendation.",
+    ctaStart: "Get Started",
+    statSubscribers: "Active Subscribers",
+    statAccuracy: "Success Rate",
+    statPillars: "Integrated Analysis Pillars",
+    featCot: "Official COT Data",
+    featCotDesc: "Speculator and institutional positioning directly from CFTC, for reading true market sentiment.",
+    featNews: "Targeted News",
+    featNewsDesc: "Smart filtering of news that actually impacts gold, interest rates, and the dollar.",
+    featCalendar: "Economic Calendar",
+    featCalendarDesc: "Upcoming high-impact events before they surprise you with sudden volatility.",
+    featBS: "Black-Scholes Probability",
+    featBSDesc: "Historical volatility, expected move, and probability range — for a buy/sell decision backed by math.",
+    aboutTitle: "Why This Platform?",
+    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (5 separate pillars before the conclusion), and gives you clear future scenarios instead of a single rigid opinion.",
+    disclaimer: "This platform is an educational analytical tool powered by AI, not investment advice or licensed financial consulting. The final decision and responsibility always rest with you.",
+    authLogin: "Sign In",
+    authSignup: "Create Account",
+    labelEmail: "Email Address",
+    labelPassword: "Password",
+    btnLogin: "Sign In",
+    btnSignup: "Create Account",
+    noAccount: "Don't have an account?",
+    hasAccount: "Already have an account?",
+    linkSignup: "Create Account",
+    linkLogin: "Sign In",
+    pendingTitle: "⏳ Your Account is Pending Activation",
+    pendingText: "Registration successful! Once payment is complete, contact us to activate your account and start using the platform immediately.",
+    pendingExpiredTitle: "⏳ Your Subscription Has Expired",
+    pendingExpiredText: "Your subscription has ended. Contact us to renew and the platform will work for you right away.",
+    btnLogout: "Sign Out",
+    qsPrice: "Current Price",
+    qsHV: "Historical Volatility",
+    qsAnnual: "Annual",
+    qsMove7d: "Expected Move",
+    qs7Days: "7 Days",
+    qsRange: "Expected Range",
+    qs68Conf: "68% Confidence",
+    autoTitle: "⚡ Full Auto Analysis",
+    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models, and analyzes all five together instantly.",
+    btnAnalyze: "Analyze Now",
+    readCot: "COT Reading",
+    readNews: "News Reading",
+    readCalendar: "Upcoming Economic Calendar",
+    readTechnical: "Classical Technical Analysis",
+    bsTitle: "Black-Scholes — Volatility & Probabilities",
+    bsCalcTitle: "Interactive Black-Scholes Calculator",
+    labelSpot: "Current Price (Spot)",
+    labelStrike: "Strike Price",
+    labelDays: "Days to Expiry",
+    labelVol: "Annual Volatility (%)",
+    labelRate: "Risk-Free Rate (%)",
+    labelType: "Option Type",
+    optCall: "Call",
+    optPut: "Put",
+    btnCalc: "Calculate",
+    probTitle: "Probability Calculator",
+    labelTarget: "Target Price",
+    labelDaysProb: "Period (Days)",
+    btnCalcProb: "Calculate Probability",
+    probBelow: "Below",
+    probAbove: "Above",
+    keyDriversTitle: "Key Drivers",
+    supportLevels: "Support Levels",
+    resistanceLevels: "Resistance Levels",
+    scenarioBull: "Bullish Scenario",
+    scenarioBear: "Bearish Scenario",
+    invalidationPrefix: "⚠️ Invalidation Level:",
+    invalidationSuffix: "— If this level breaks, the current forecast becomes invalid and must be re-evaluated.",
+    risksTitle: "Contrarian Scenarios / Risks",
+    historyTitle: "Weekly Forecast History",
+    footer: "This analysis is AI-assisted for educational purposes and is not investment advice.",
+    confLabel: "Confidence",
+    usageText: (used, limit) => `Used ${used} of ${limit} analyses today.`,
+    usageReached: (limit) => `Daily limit reached (${limit} analyses).`,
+    historyEmpty: "No saved analyses yet.",
+    historyEvaluated: (pct, correct, total) => `Evaluated Forecast Accuracy: <b>${pct}%</b> <span>(${correct} of ${total})</span>`,
+    historyNoEval: "No evaluated forecasts yet — once you know the actual weekly outcome, select it from each item below.",
+    toastLoginSuccess: "Signed in successfully",
+    toastSignupSuccess: "Account created! Check your email for confirmation.",
+    toastAnalyzeError: "Analysis error: ",
+    toastCopied: "Copied!",
+    loading: "Fetching data and analyzing...",
+    trendBullish: "Bullish",
+    trendBearish: "Bearish",
+    trendNeutral: "Neutral",
+    outcomeUp: "Went Up",
+    outcomeDown: "Went Down",
+    outcomeFlat: "Flat",
+    correct: "✓ Correct",
+    incorrect: "✗ Incorrect",
+    daysLeft: (d) => `${d} days left on subscription`,
+  }
+};
 
-// ---------- Auth ----------
+let currentLang = localStorage.getItem("preferred_lang") || "ar";
+let currentTheme = localStorage.getItem("preferred_theme") || "dark";
+
+function t(key, ...args) {
+  const val = i18n[currentLang][key];
+  if (typeof val === "function") return val(...args);
+  return val || key;
+}
+
+function applyLang() {
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = currentLang === "ar" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    const val = i18n[currentLang][key];
+    if (val) el.textContent = typeof val === "string" ? val : el.textContent;
+  });
+  document.getElementById("langLabel").textContent = currentLang === "ar" ? "English" : "العربية";
+  // Update dynamic text
+  updateAuthUI();
+  renderHistory();
+  const usage = lastUsage;
+  if (usage) updateUsageBar(usage);
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = currentTheme;
+  document.getElementById("themeIcon").textContent = currentTheme === "dark" ? "☀️" : "🌙";
+}
+
+document.getElementById("langBtn").onclick = () => {
+  currentLang = currentLang === "ar" ? "en" : "ar";
+  localStorage.setItem("preferred_lang", currentLang);
+  applyLang();
+  showToast(currentLang === "ar" ? "تم تغيير اللغة إلى العربية" : "Language switched to English", "success");
+};
+
+document.getElementById("themeBtn").onclick = () => {
+  currentTheme = currentTheme === "dark" ? "light" : "dark";
+  localStorage.setItem("preferred_theme", currentTheme);
+  applyTheme();
+};
+
+// ==================== TOAST ====================
+function showToast(message, type = "") {
+  const container = document.getElementById("toastContainer");
+  const toast = document.createElement("div");
+  toast.className = "toast " + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 3500);
+}
+
+// ==================== BLACK-SCHOLES MATH ====================
+function nd(x) {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+function N(x) {
+  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+  const a4 = -1.453152027, a5 = 1.061405429;
+  const p = 0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x) / Math.sqrt(2);
+  const t = 1 / (1 + p * x);
+  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  return 0.5 * (1 + sign * y);
+}
+function bsCalc(S, K, T, r, sigma, type) {
+  if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) return null;
+  const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+  const d2 = d1 - sigma * Math.sqrt(T);
+  const Nd1 = N(d1), Nd2 = N(d2), Nmd1 = N(-d1), Nmd2 = N(-d2);
+  let price, delta, gamma, theta, vega, rho;
+  if (type === "call") {
+    price = S * Nd1 - K * Math.exp(-r * T) * Nd2;
+    delta = Nd1;
+    rho = K * T * Math.exp(-r * T) * Nd2 / 100;
+  } else {
+    price = K * Math.exp(-r * T) * Nmd2 - S * Nmd1;
+    delta = -Nmd1;
+    rho = -K * T * Math.exp(-r * T) * Nmd2 / 100;
+  }
+  gamma = nd(d1) / (S * sigma * Math.sqrt(T));
+  theta = -(S * nd(d1) * sigma) / (2 * Math.sqrt(T));
+  theta -= r * K * Math.exp(-r * T) * (type === "call" ? Nd2 : -Nmd2);
+  theta /= 365;
+  vega = S * nd(d1) * Math.sqrt(T) / 100;
+  return { price, delta, gamma, theta, vega, rho };
+}
+function probAbove(S, K, T, r, sigma) {
+  if (T <= 0) return S > K ? 1 : 0;
+  const d2 = (Math.log(S / K) + (r - 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+  return N(d2);
+}
+
+// ==================== BS CALCULATOR UI ====================
+document.getElementById("calcBtn").onclick = () => {
+  const S = parseFloat(document.getElementById("calcSpot").value);
+  const K = parseFloat(document.getElementById("calcStrike").value);
+  const days = parseFloat(document.getElementById("calcDays").value);
+  const vol = parseFloat(document.getElementById("calcVol").value) / 100;
+  const rate = parseFloat(document.getElementById("calcRate").value) / 100;
+  const type = document.getElementById("calcType").value;
+  if (!S || !K || !days || !vol) { showToast(t("toastAnalyzeError") + "Invalid inputs", "error"); return; }
+  const T = days / 365;
+  const res = bsCalc(S, K, T, rate, vol, type);
+  if (!res) { showToast("Calculation error", "error"); return; }
+  const resultDiv = document.getElementById("calcResult");
+  resultDiv.style.display = "grid";
+  const labels = currentLang === "ar" ? {
+    price: "القيمة العادلة", delta: "دلتا", gamma: "جاما", theta: "ثيتا", vega: "فيغا", rho: "رو"
+  } : {
+    price: "Fair Value", delta: "Delta", gamma: "Gamma", theta: "Theta", vega: "Vega", rho: "Rho"
+  };
+  resultDiv.innerHTML = `
+    <div class="bs-calc-output"><div class="label">${labels.price}</div><div class="value">$${res.price.toFixed(2)}</div></div>
+    <div class="bs-calc-output"><div class="label">${labels.delta}</div><div class="value">${res.delta.toFixed(3)}</div></div>
+    <div class="bs-calc-output"><div class="label">${labels.gamma}</div><div class="value">${res.gamma.toFixed(4)}</div></div>
+    <div class="bs-calc-output"><div class="label">${labels.theta}</div><div class="value">${res.theta.toFixed(3)}</div></div>
+    <div class="bs-calc-output"><div class="label">${labels.vega}</div><div class="value">${res.vega.toFixed(3)}</div></div>
+    <div class="bs-calc-output"><div class="label">${labels.rho}</div><div class="value">${res.rho.toFixed(3)}</div></div>
+  `;
+};
+
+// ==================== PROBABILITY CALCULATOR UI ====================
+document.getElementById("probBtn").onclick = () => {
+  const target = parseFloat(document.getElementById("probTarget").value);
+  const days = parseFloat(document.getElementById("probDays").value);
+  if (!target || !days || !lastTechnical) { showToast("Missing data", "error"); return; }
+  const S = lastTechnical.lastClose;
+  const sigma = lastTechnical.historicalVolatility;
+  const T = days / 365;
+  const r = 0.045;
+  const pAbove = probAbove(S, target, T, r, sigma);
+  const pBelow = 1 - pAbove;
+  const resultDiv = document.getElementById("probResult");
+  resultDiv.style.display = "block";
+  const bar = document.getElementById("probBar");
+  const belowPct = Math.round(pBelow * 100);
+  const abovePct = Math.round(pAbove * 100);
+  bar.innerHTML = `
+    <div class="prob-bar-segment" style="width:${belowPct}%; background:var(--bear);">${belowPct}% ${currentLang==="ar"?"أقل":"Below"}</div>
+    <div class="prob-bar-segment" style="width:${abovePct}%; background:var(--bull);">${abovePct}% ${currentLang==="ar"?"أعلى":"Above"}</div>
+  `;
+};
+
+// ==================== AUTH ====================
 let sb = null;
 let currentSession = null;
-let authMode = "login"; // or "signup"
+let authMode = "login";
 let authGateRequested = false;
+let lastUsage = null;
+let lastTechnical = null;
 
 async function initAuth() {
   loadPublicStats();
   const cfgRes = await fetch("/api/config");
   const cfg = await cfgRes.json();
   sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-
   const { data: { session } } = await sb.auth.getSession();
   await handleSession(session);
-
-  sb.auth.onAuthStateChange(async (_event, session) => {
-    await handleSession(session);
-  });
+  sb.auth.onAuthStateChange(async (_event, session) => { await handleSession(session); });
 }
 
 async function loadPublicStats() {
@@ -397,7 +1138,7 @@ async function loadPublicStats() {
     const r = await fetch("/api/public-stats");
     const data = await r.json();
     document.getElementById("statSubscribers").textContent = data.activeSubscribers ?? "—";
-    document.getElementById("statAccuracy").textContent = data.accuracyText || "قيد التجميع";
+    document.getElementById("statAccuracy").textContent = data.accuracyText || (currentLang === "ar" ? "قيد التجميع" : "Compiling");
   } catch (e) {}
 }
 
@@ -424,19 +1165,13 @@ async function handleSession(session) {
     return;
   }
   document.getElementById("landingPage").style.display = "none";
-  let isActive = false;
-  let expiresAt = null;
+  let isActive = false, expiresAt = null;
   try {
     const { data, error } = await sb.from("profiles").select("is_active, subscription_expires_at").eq("id", session.user.id).single();
-    if (!error && data) {
-      isActive = !!data.is_active;
-      expiresAt = data.subscription_expires_at ? new Date(data.subscription_expires_at) : null;
-    }
+    if (!error && data) { isActive = !!data.is_active; expiresAt = data.subscription_expires_at ? new Date(data.subscription_expires_at) : null; }
   } catch (e) {}
-
   const isExpired = expiresAt ? expiresAt.getTime() <= Date.now() : false;
   const effectivelyActive = isActive && !isExpired;
-
   document.getElementById("authGate").style.display = "none";
   if (effectivelyActive) {
     document.getElementById("pendingCard").style.display = "none";
@@ -444,22 +1179,30 @@ async function handleSession(session) {
     let label = session.user.email || "";
     if (expiresAt) {
       const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86400000);
-      label += ` · باقي ${daysLeft} يوم على الاشتراك`;
+      label += ` · ${t("daysLeft", daysLeft)}`;
     }
     document.getElementById("userEmailLabel").textContent = label;
     document.getElementById("histCount").textContent = getHistory().length;
   } else {
     document.getElementById("pendingCard").style.display = "block";
     document.getElementById("appContent").style.display = "none";
-    const pendingText = document.querySelector("#pendingCard p");
+    const pendingTitle = document.getElementById("pendingTitle");
+    const pendingText = document.getElementById("pendingText");
     if (isActive && isExpired) {
-      document.querySelector("#pendingCard h2").textContent = "⏳ انتهت مدة اشتراكك";
-      pendingText.textContent = "خلصت مدة اشتراكك. تواصل معنا لتجديده وبيرجع الموقع يشتغل معك مباشرة.";
+      pendingTitle.textContent = t("pendingExpiredTitle");
+      pendingText.textContent = t("pendingExpiredText");
     } else {
-      document.querySelector("#pendingCard h2").textContent = "⏳ حسابك بانتظار التفعيل";
-      pendingText.textContent = "سجّلت بنجاح! بعد ما تتم عملية الدفع، تواصل معنا لتفعيل حسابك وبتقدر تستخدم الموقع مباشرة.";
+      pendingTitle.textContent = t("pendingTitle");
+      pendingText.textContent = t("pendingText");
     }
   }
+}
+
+function updateAuthUI() {
+  document.getElementById("authTitle").textContent = t(authMode === "login" ? "authLogin" : "authSignup");
+  document.getElementById("authSubmitBtn").textContent = t(authMode === "login" ? "btnLogin" : "btnSignup");
+  document.getElementById("authSwitchText").textContent = t(authMode === "login" ? "noAccount" : "hasAccount");
+  document.getElementById("authSwitchLink").textContent = t(authMode === "login" ? "linkSignup" : "linkLogin");
 }
 
 function setAuthMsg(msg, type) {
@@ -470,30 +1213,28 @@ function setAuthMsg(msg, type) {
 
 document.getElementById("authSwitchLink").onclick = () => {
   authMode = authMode === "login" ? "signup" : "login";
-  document.getElementById("authTitle").textContent = authMode === "login" ? "تسجيل الدخول" : "إنشاء حساب جديد";
-  document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "دخول" : "إنشاء حساب";
-  document.getElementById("authSwitchText").textContent = authMode === "login" ? "ما عندك حساب؟" : "عندك حساب أصلاً؟";
-  document.getElementById("authSwitchLink").textContent = authMode === "login" ? "إنشاء حساب جديد" : "تسجيل الدخول";
+  updateAuthUI();
   setAuthMsg("");
 };
 
 document.getElementById("authSubmitBtn").onclick = async () => {
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
-  if (!email || !password) { setAuthMsg("عبي البريد وكلمة السر.", "err"); return; }
-  setAuthMsg("جارٍ المعالجة...");
+  if (!email || !password) { setAuthMsg(currentLang === "ar" ? "عبي البريد وكلمة السر." : "Fill in email and password.", "err"); return; }
+  setAuthMsg(currentLang === "ar" ? "جارٍ المعالجة..." : "Processing...");
   try {
     if (authMode === "login") {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
       setAuthMsg("");
+      showToast(t("toastLoginSuccess"), "success");
     } else {
       const { error } = await sb.auth.signUp({ email, password });
       if (error) throw error;
-      setAuthMsg("تم إنشاء الحساب! لو طُلب تأكيد بريد، افحص إيميلك، وبعدين سجل دخول.", "ok");
+      setAuthMsg(t("toastSignupSuccess"), "ok");
     }
   } catch (e) {
-    setAuthMsg(e.message || "صار خطأ، حاول من جديد.", "err");
+    setAuthMsg(e.message || (currentLang === "ar" ? "صار خطأ، حاول من جديد." : "An error occurred, please try again."), "err");
   }
 };
 
@@ -505,22 +1246,22 @@ function authHeaders() {
 }
 
 initAuth();
-const HISTORY_KEY = "gold-cot-history";
-let loading = false;
+const HISTORY_KEY = "gold-cot-history-v2";
 
 function dirColor(dir) {
-  if (!dir) return C.neutral;
-  if (dir.includes("صعود")) return C.bull;
-  if (dir.includes("هبوط")) return C.bear;
-  return C.neutral;
+  if (!dir) return "#8E93A0";
+  if (dir.includes("صعود") || dir.includes("Bull")) return "#3FA789";
+  if (dir.includes("هبوط") || dir.includes("Bear")) return "#D1584C";
+  return "#8E93A0";
 }
 function dirEmoji(dir) {
-  if (dir && dir.includes("صعود")) return "📈";
-  if (dir && dir.includes("هبوط")) return "📉";
+  if (!dir) return "➖";
+  if (dir.includes("صعود") || dir.includes("Bull")) return "📈";
+  if (dir.includes("هبوط") || dir.includes("Bear")) return "📉";
   return "➖";
 }
 
-// ---------- Gauge ----------
+// ==================== GAUGE ====================
 function drawGauge(score, dir) {
   const clamped = Math.max(-100, Math.min(100, score || 0));
   const angle = (clamped / 100) * 90;
@@ -534,20 +1275,23 @@ function drawGauge(score, dir) {
     const x2 = cx + r*Math.cos(e), y2 = cy + r*Math.sin(e);
     return `M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`;
   }
+  const bearLabel = currentLang === "ar" ? "هبوطي" : "Bearish";
+  const neutralLabel = currentLang === "ar" ? "محايد" : "Neutral";
+  const bullLabel = currentLang === "ar" ? "صعودي" : "Bullish";
   const svg = document.getElementById("gauge");
   svg.innerHTML = `
-    <path d="${arcPath(0,60)}" stroke="${C.bear}" stroke-width="14" fill="none" />
+    <path d="${arcPath(0,60)}" stroke="#D1584C" stroke-width="14" fill="none" />
     <path d="${arcPath(60,120)}" stroke="#3A3F47" stroke-width="14" fill="none" />
-    <path d="${arcPath(120,180)}" stroke="${C.bull}" stroke-width="14" fill="none" />
+    <path d="${arcPath(120,180)}" stroke="#3FA789" stroke-width="14" fill="none" />
     <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${color}" stroke-width="3" stroke-linecap="round" />
     <circle cx="${cx}" cy="${cy}" r="5" fill="${color}" />
-    <text x="14" y="126" fill="${C.bear}" font-size="10" font-family="monospace">هبوطي</text>
-    <text x="95" y="20" fill="${C.neutral}" font-size="10" font-family="monospace">محايد</text>
-    <text x="168" y="126" fill="${C.bull}" font-size="10" font-family="monospace">صعودي</text>
+    <text x="14" y="126" fill="#D1584C" font-size="10" font-family="monospace">${bearLabel}</text>
+    <text x="88" y="20" fill="#8E93A0" font-size="10" font-family="monospace">${neutralLabel}</text>
+    <text x="168" y="126" fill="#3FA789" font-size="10" font-family="monospace">${bullLabel}</text>
   `;
 }
 
-// ---------- History toggle ----------
+// ==================== HISTORY TOGGLE ====================
 document.getElementById("histToggle").onclick = () => {
   const body = document.getElementById("histBody");
   const open = body.style.display !== "none";
@@ -556,106 +1300,134 @@ document.getElementById("histToggle").onclick = () => {
   if (!open) renderHistory();
 };
 
-// ---------- Auto analyze ----------
+// ==================== AUTO ANALYZE ====================
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
   const { price, cotRows, headlines, calendar, technical } = sources;
   let html = "";
-  html += `<div class="src-line"><b>السعر المستخدم:</b> ${price ? price.price + " $ (تحديث: " + price.updatedAtReadable + ")" : "تعذر الجلب"}</div>`;
-  html += `<div class="src-line"><b>عدد صفوف COT المستلمة:</b> ${cotRows ? cotRows.length : 0}</div>`;
-  html += `<div class="src-line"><b>عدد العناوين المستلمة:</b> ${headlines ? headlines.length : 0}</div>`;
-  html += `<div class="src-line"><b>أحداث التقويم الاقتصادي القادمة (USD):</b> ${calendar ? calendar.length : 0}</div>`;
+  html += `<div class="src-line"><b>${currentLang==="ar"?"السعر المستخدم:":"Price Used:"}</b> ${price ? price.price + " $ (" + (currentLang==="ar"?"تحديث:":"Updated:") + " " + price.updatedAtReadable + ")" : (currentLang==="ar"?"تعذر الجلب":"Failed to fetch")}</div>`;
+  html += `<div class="src-line"><b>COT:</b> ${cotRows ? cotRows.length : 0} ${currentLang==="ar"?"صفوف":"rows"}</div>`;
+  html += `<div class="src-line"><b>${currentLang==="ar"?"الأخبار:":"News:"}</b> ${headlines ? headlines.length : 0} ${currentLang==="ar"?"عنوان":"headlines"}</div>`;
+  html += `<div class="src-line"><b>${currentLang==="ar"?"التقويم:":"Calendar:"}</b> ${calendar ? calendar.length : 0} ${currentLang==="ar"?"حدث":"events"}</div>`;
   if (technical) {
-    html += `<div class="src-line"><b>المؤشرات الفنية:</b> RSI ${technical.rsi14?.toFixed(1) ?? "-"} · SMA20 ${technical.sma20?.toFixed(2) ?? "-"} · SMA50 ${technical.sma50?.toFixed(2) ?? "-"} (${technical.dataPoints} يوم بيانات${technical.fromCache ? "، مخزّنة مؤقتاً" : ""})</div>`;
+    html += `<div class="src-line"><b>${currentLang==="ar"?"فني:":"Technical:"}</b> RSI ${technical.rsi14?.toFixed(1) ?? "-"} · SMA20 ${technical.sma20?.toFixed(2) ?? "-"} · SMA50 ${technical.sma50?.toFixed(2) ?? "-"} (${technical.dataPoints} ${currentLang==="ar"?"يوم":"days"}${technical.fromCache ? (currentLang==="ar"?"، مخزّنة مؤقتاً":", cached") : ""})</div>`;
     if (technical.historicalVolatility != null) {
-      html += `<div class="src-line"><b>Black-Scholes:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · Expected Move 7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range 68% [${technical.expectedRange7d?.lower.toFixed(2) ?? "-"} - ${technical.expectedRange7d?.upper.toFixed(2) ?? "-"}]</div>`;
+      html += `<div class="src-line"><b>BS:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · EM7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range [${technical.expectedRange7d?.lower.toFixed(0) ?? "-"}-${technical.expectedRange7d?.upper.toFixed(0) ?? "-"}]</div>`;
     }
-  } else {
-    html += `<div class="src-line"><b>المؤشرات الفنية:</b> تعذر الحساب حالياً</div>`;
   }
   if (headlines && headlines.length) {
-    html += `<div class="src-line" style="margin-top:6px;"><b>أهم العناوين:</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
-  }
-  if (calendar && calendar.length) {
-    html += `<div class="src-line" style="margin-top:6px;"><b>أهم الأحداث القادمة:</b><br>${calendar.slice(0,6).map(c=>"• "+(c.title||"")+" — "+(c.date||"")+" ("+(c.impact||"")+")").join("<br>")}</div>`;
+    html += `<div class="src-line" style="margin-top:6px;"><b>${currentLang==="ar"?"أهم العناوين:":"Top Headlines:"}</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
   }
   box.innerHTML = html;
   box.style.display = "block";
 }
 
 function updateUsageBar(usage) {
+  lastUsage = usage;
   const el = document.getElementById("usageBar");
   if (!usage) { el.textContent = ""; return; }
-  el.textContent = `استخدمت ${usage.used} من ${usage.limit} تحليلات اليوم.`;
+  el.textContent = usage.used >= usage.limit ? t("usageReached", usage.limit) : t("usageText", usage.used, usage.limit);
   el.className = "usage-bar" + (usage.used >= usage.limit ? " limit-reached" : "");
 }
 
+function updateQuickStats(technical, price) {
+  const qs = document.getElementById("quickStats");
+  if (!technical) { qs.style.display = "none"; return; }
+  qs.style.display = "grid";
+  document.getElementById("qsPriceVal").textContent = price ? "$" + price.price : "—";
+  document.getElementById("qsPriceTime").textContent = price ? price.updatedAtReadable : "";
+  document.getElementById("qsHVVal").textContent = technical.historicalVolatility != null ? (technical.historicalVolatility * 100).toFixed(1) + "%" : "—";
+  document.getElementById("qsMoveVal").textContent = technical.expectedMove7d != null ? "±$" + technical.expectedMove7d.toFixed(1) : "—";
+  document.getElementById("qsRangeVal").textContent = technical.expectedRange7d ? technical.expectedRange7d.lower.toFixed(0) + "-" + technical.expectedRange7d.upper.toFixed(0) : "—";
+}
+
 async function autoAnalyze() {
-  showError("");
   const btn = document.getElementById("autoBtn");
   btn.disabled = true;
   document.getElementById("autoBtnIcon").innerHTML = '<span class="spin">⏳</span>';
-  document.getElementById("autoBtnLabel").textContent = "جارٍ جلب البيانات والتحليل...";
+  document.getElementById("autoBtnLabel").textContent = t("loading");
   document.getElementById("sourcesBox").style.display = "none";
+  document.getElementById("resultCard").style.display = "none";
 
   try {
-    const response = await fetch("/api/auto-analyze", { method: "POST", headers: { ...authHeaders() } });
+    const response = await fetch("/api/auto-analyze", {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: currentLang })
+    });
     const data = await response.json();
     if (data._usage) updateUsageBar(data._usage);
     if (!response.ok) {
-      if (response.status === 429) { showError(data.error); return; }
-      throw new Error(data.error || "خطأ من الخادم");
+      if (response.status === 429) { showToast(data.error, "error"); return; }
+      throw new Error(data.error || "Server error");
     }
 
     renderSources(data._sources);
+    if (data._sources?.technical) {
+      lastTechnical = data._sources.technical;
+      updateQuickStats(data._sources.technical, data._sources.price);
+      // Pre-fill calculator inputs
+      document.getElementById("calcSpot").value = data._sources.technical.lastClose.toFixed(2);
+      document.getElementById("calcVol").value = data._sources.technical.historicalVolatility ? (data._sources.technical.historicalVolatility * 100).toFixed(1) : "20";
+      document.getElementById("probTarget").value = data._sources.technical.lastClose.toFixed(2);
+    }
 
     const textBlock = (data.content || []).find(b => b.type === "text");
-    if (!textBlock) throw new Error("لم يرجع النموذج أي نص.");
+    if (!textBlock) throw new Error("No text returned from model.");
     const clean = textBlock.text.replace(/```json|```/g, "").trim();
 
     let parsed;
     try { parsed = JSON.parse(clean); }
     catch (e) {
       parsed = {
-        trend:"محايد", score:0, confidence:0,
+        trend: currentLang === "ar" ? "محايد" : "Neutral", score: 0, confidence: 0,
         summary: data._truncated
-          ? "الرد انقطع قبل ما يكمل (تجاوز حد الطول). جرّب تضغط الزر من جديد، عادة بتكمل بالمحاولة الثانية."
-          : "ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
-        cot_reading: clean.slice(0,600) || "لا يوجد نص.",
-        news_reading:"", black_scholes_reading:"", bs_recommendation:"", key_drivers:[], key_levels:{support:[],resistance:[]},
-        risks:["جرّب إعادة المحاولة بعد قليل."],
+          ? (currentLang === "ar" ? "الرد انقطع قبل ما يكمل. جرّب تضغط الزر من جديد." : "Response was truncated. Try clicking the button again.")
+          : (currentLang === "ar" ? "ما قدرنا نعرض النتيجة بالتنسيق المعتاد." : "Could not display result in the expected format."),
+        cot_reading: clean.slice(0, 600) || "No text.",
+        news_reading: "", black_scholes_reading: "", bs_recommendation: "",
+        key_drivers: [], key_levels: { support: [], resistance: [] },
+        risks: [currentLang === "ar" ? "جرّب إعادة المحاولة بعد قليل." : "Try again in a moment."],
       };
     }
 
-    const entry = { ts: Date.now(), date: new Date().toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"}), ...parsed, outcome:null };
+    const entry = {
+      ts: Date.now(),
+      date: new Date().toLocaleDateString(currentLang === "ar" ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" }),
+      ...parsed, outcome: null
+    };
     showResult(entry, data._sources);
     saveHistory(entry);
   } catch (e) {
-    showError("صار خطأ أثناء التحليل التلقائي: " + (e.message || ""));
+    showToast(t("toastAnalyzeError") + (e.message || ""), "error");
   } finally {
     btn.disabled = false;
     document.getElementById("autoBtnIcon").textContent = "⚡";
-    document.getElementById("autoBtnLabel").textContent = "حلّل الآن تلقائياً";
+    document.getElementById("autoBtnLabel").textContent = t("btnAnalyze");
   }
 }
 document.getElementById("autoBtn").onclick = autoAnalyze;
 
-// ---------- Error helper ----------
-function showError(msg) {
-  const box = document.getElementById("errorBox");
-  box.textContent = msg;
-  box.style.display = msg ? "block" : "none";
-}
+// Keyboard shortcut: Ctrl+Enter to analyze
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.key === "Enter" && document.getElementById("appContent").style.display !== "none") {
+    autoAnalyze();
+  }
+});
 
+// ==================== SHOW RESULT ====================
 function showResult(r, sources) {
   document.getElementById("resultCard").style.display = "block";
+  document.getElementById("resultCard").classList.add("fade-in");
+  setTimeout(() => document.getElementById("resultCard").classList.remove("fade-in"), 500);
+
   document.getElementById("resDate").textContent = r.date;
   document.getElementById("resIcon").textContent = dirEmoji(r.trend);
   const trendEl = document.getElementById("resTrend");
   trendEl.textContent = r.trend;
   trendEl.style.color = dirColor(r.trend);
-  document.getElementById("resConf").textContent = "ثقة " + r.confidence + "%";
+  document.getElementById("resConf").textContent = t("confLabel") + " " + r.confidence + "%";
   document.getElementById("resSummary").textContent = r.summary;
   document.getElementById("resCot").textContent = r.cot_reading || "";
   document.getElementById("resNews").textContent = r.news_reading || "";
@@ -666,93 +1438,92 @@ function showResult(r, sources) {
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
   else { csEl.style.display = "none"; }
 
-  // Black-Scholes rendering
+  // Black-Scholes Card
   const bsCard = document.getElementById("bsCard");
-  if (r.black_scholes_reading || r.bs_recommendation || (sources && sources.technical && sources.technical.historicalVolatility != null)) {
+  const bsSources = sources?.technical;
+  if (r.black_scholes_reading || r.bs_recommendation || (bsSources && bsSources.historicalVolatility != null)) {
     bsCard.style.display = "block";
     const bsGrid = document.getElementById("bsGrid");
     let gridHtml = "";
-
-    if (sources && sources.technical) {
-      const t = sources.technical;
-      if (t.historicalVolatility != null) {
-        gridHtml += `<div class="bs-item"><div class="bs-label">التقلب التاريخي (HV)</div><div class="bs-value">${(t.historicalVolatility * 100).toFixed(1)}%</div></div>`;
-        gridHtml += `<div class="bs-item"><div class="bs-label">الحركة المتوقعة (7 أيام)</div><div class="bs-value">±$${t.expectedMove7d?.toFixed(2) ?? "-"}</div></div>`;
-        if (t.expectedRange7d) {
-          gridHtml += `<div class="bs-item"><div class="bs-label">نطاق 68% (أسبوع)</div><div class="bs-value">${t.expectedRange7d.lower.toFixed(0)} - ${t.expectedRange7d.upper.toFixed(0)}</div></div>`;
-        }
-        if (t.probInBollinger7d != null) {
-          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية ضمن بولينجر</div><div class="bs-value">${(t.probInBollinger7d * 100).toFixed(1)}%</div></div>`;
-        }
-        if (t.probAboveSMA20 != null) {
-          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية فوق SMA20</div><div class="bs-value">${(t.probAboveSMA20 * 100).toFixed(1)}%</div></div>`;
-        }
-        if (t.probAboveSMA50 != null) {
-          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية فوق SMA50</div><div class="bs-value">${(t.probAboveSMA50 * 100).toFixed(1)}%</div></div>`;
-        }
-      }
+    if (bsSources?.historicalVolatility != null) {
+      const t = bsSources;
+      const labels = currentLang === "ar" ? {
+        hv: "التقلب التاريخي", em7: "الحركة المتوقعة 7ي", em30: "الحركة المتوقعة 30ي",
+        r68: "نطاق 68%", r95: "نطاق 95%", probBB: "احتمالية بولينجر", probSMA20: "فوق SMA20", probSMA50: "فوق SMA50"
+      } : {
+        hv: "Historical Vol", em7: "Expected Move 7d", em30: "Expected Move 30d",
+        r68: "Range 68%", r95: "Range 95%", probBB: "Prob in BB", probSMA20: "Above SMA20", probSMA50: "Above SMA50"
+      };
+      gridHtml += `<div class="bs-item"><div class="bs-label">${labels.hv}</div><div class="bs-value">${(t.historicalVolatility * 100).toFixed(1)}%</div></div>`;
+      gridHtml += `<div class="bs-item"><div class="bs-label">${labels.em7}</div><div class="bs-value">±$${t.expectedMove7d?.toFixed(1) ?? "-"}</div></div>`;
+      if (t.expectedMove30d != null) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.em30}</div><div class="bs-value">±$${t.expectedMove30d.toFixed(1)}</div></div>`;
+      if (t.expectedRange7d) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.r68}</div><div class="bs-value">${t.expectedRange7d.lower.toFixed(0)}-${t.expectedRange7d.upper.toFixed(0)}</div></div>`;
+      if (t.expectedRange7d95) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.r95}</div><div class="bs-value">${t.expectedRange7d95.lower.toFixed(0)}-${t.expectedRange7d95.upper.toFixed(0)}</div></div>`;
+      if (t.probInBollinger7d != null) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.probBB}</div><div class="bs-value">${(t.probInBollinger7d * 100).toFixed(1)}%</div></div>`;
+      if (t.probAboveSMA20 != null) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.probSMA20}</div><div class="bs-value">${(t.probAboveSMA20 * 100).toFixed(1)}%</div></div>`;
+      if (t.probAboveSMA50 != null) gridHtml += `<div class="bs-item"><div class="bs-label">${labels.probSMA50}</div><div class="bs-value">${(t.probAboveSMA50 * 100).toFixed(1)}%</div></div>`;
     }
-    bsGrid.innerHTML = gridHtml || '<div class="bs-item" style="grid-column:1/-1;"><div class="bs-label">بيانات Black-Scholes</div><div class="bs-value">غير متوفرة حالياً</div></div>';
+    bsGrid.innerHTML = gridHtml || `<div class="bs-item" style="grid-column:1/-1;"><div class="bs-label">Black-Scholes</div><div class="bs-value">${currentLang==="ar"?"غير متوفرة":"Not available"}</div></div>`;
 
     const bsNote = document.getElementById("bsNote");
-    if (r.black_scholes_reading) {
-      bsNote.textContent = r.black_scholes_reading;
-      bsNote.style.display = "block";
-    } else {
-      bsNote.style.display = "none";
-    }
+    if (r.black_scholes_reading) { bsNote.textContent = r.black_scholes_reading; bsNote.style.display = "block"; }
+    else bsNote.style.display = "none";
 
     const bsRec = document.getElementById("bsRecommendation");
     if (r.bs_recommendation) {
-      bsRec.textContent = "💡 " + r.bs_recommendation;
-      bsRec.style.display = "block";
-      // Color coding based on recommendation text
+      bsRec.innerHTML = "💡 " + r.bs_recommendation;
+      bsRec.style.display = "flex";
       const recText = r.bs_recommendation.toLowerCase();
       bsRec.className = "bs-recommendation";
-      if (recText.includes("بيع") || recText.includes("هبوط") || recText.includes("بيعي")) {
-        bsRec.classList.add("sell");
-      } else if (recText.includes("انتظر") || recText.includes("محايد") || recText.includes("لا")) {
-        bsRec.classList.add("wait");
-      }
-    } else {
-      bsRec.style.display = "none";
-    }
+      if (recText.includes("بيع") || recText.includes("bear") || recText.includes("sell")) bsRec.classList.add("sell");
+      else if (recText.includes("انتظر") || recText.includes("wait") || recText.includes("neutral") || recText.includes("محايد")) bsRec.classList.add("wait");
+    } else bsRec.style.display = "none";
   } else {
     bsCard.style.display = "none";
   }
 
+  // Show calculator widgets
+  document.getElementById("bsCalcWidget").style.display = "block";
+  document.getElementById("probWidget").style.display = "block";
+
+  // Scenarios
   const scWrap = document.getElementById("scenariosWrap");
   if (r.scenarios && (r.scenarios.bullish || r.scenarios.bearish)) {
     document.getElementById("resScenarioBull").textContent = r.scenarios.bullish || "—";
     document.getElementById("resScenarioBear").textContent = r.scenarios.bearish || "—";
     scWrap.style.display = "grid";
-  } else { scWrap.style.display = "none"; }
+  } else scWrap.style.display = "none";
 
+  // Invalidation
   const invEl = document.getElementById("resInvalidation");
   if (r.invalidation_level) {
-    invEl.innerHTML = `⚠️ مستوى الإبطال: <b>${r.invalidation_level}</b> — لو انكسر هالمستوى، التوقع الحالي يصير غير صالح ولازم تعاد القراءة.`;
+    invEl.innerHTML = `${t("invalidationPrefix")} <b>${r.invalidation_level}</b> ${t("invalidationSuffix")}`;
     invEl.style.display = "block";
-  } else { invEl.style.display = "none"; }
+  } else invEl.style.display = "none";
+
   drawGauge(r.score, r.trend);
 
+  // Drivers
   const driversList = document.getElementById("driversList");
   driversList.innerHTML = "";
-  (r.key_drivers||[]).forEach(d => { const li=document.createElement("li"); li.textContent=d; driversList.appendChild(li); });
-  document.getElementById("driversWrap").style.display = (r.key_drivers||[]).length ? "block" : "none";
+  (r.key_drivers || []).forEach(d => { const li = document.createElement("li"); li.textContent = d; driversList.appendChild(li); });
+  document.getElementById("driversWrap").style.display = (r.key_drivers || []).length ? "block" : "none";
 
-  const sup = document.getElementById("supportChips"); sup.innerHTML="";
-  (r.key_levels?.support||[]).forEach(s => { const span=document.createElement("span"); span.className="chip"; span.textContent=s; sup.appendChild(span); });
-  const res = document.getElementById("resistanceChips"); res.innerHTML="";
-  (r.key_levels?.resistance||[]).forEach(s => { const span=document.createElement("span"); span.className="chip"; span.textContent=s; res.appendChild(span); });
-  const hasLevels = (r.key_levels?.support||[]).length || (r.key_levels?.resistance||[]).length;
+  // Levels
+  const sup = document.getElementById("supportChips"); sup.innerHTML = "";
+  (r.key_levels?.support || []).forEach(s => { const span = document.createElement("span"); span.className = "chip"; span.textContent = s; sup.appendChild(span); });
+  const resEl = document.getElementById("resistanceChips"); resEl.innerHTML = "";
+  (r.key_levels?.resistance || []).forEach(s => { const span = document.createElement("span"); span.className = "chip"; span.textContent = s; resEl.appendChild(span); });
+  const hasLevels = (r.key_levels?.support || []).length || (r.key_levels?.resistance || []).length;
   document.getElementById("levelsWrap").style.display = hasLevels ? "grid" : "none";
 
-  const risksList = document.getElementById("risksList"); risksList.innerHTML="";
-  (r.risks||[]).forEach(x => { const li=document.createElement("li"); li.textContent=x; risksList.appendChild(li); });
-  document.getElementById("risksWrap").style.display = (r.risks||[]).length ? "block" : "none";
+  // Risks
+  const risksList = document.getElementById("risksList"); risksList.innerHTML = "";
+  (r.risks || []).forEach(x => { const li = document.createElement("li"); li.textContent = x; risksList.appendChild(li); });
+  document.getElementById("risksWrap").style.display = (r.risks || []).length ? "block" : "none";
 }
 
-// ---------- History (localStorage) ----------
+// ==================== HISTORY ====================
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); }
   catch (e) { return []; }
@@ -778,48 +1549,49 @@ function setOutcome(ts, outcome) {
 }
 function predictionCorrect(item) {
   if (!item.outcome) return null;
-  if (item.trend === "محايد") return null;
-  const wentUp = item.outcome === "ارتفع";
-  const wentDown = item.outcome === "انخفض";
-  if (item.trend.includes("صعود")) return wentUp;
-  if (item.trend.includes("هبوط")) return wentDown;
+  if (item.trend === "محايد" || item.trend === "Neutral") return null;
+  const wentUp = item.outcome === "ارتفع" || item.outcome === "Went Up";
+  const wentDown = item.outcome === "انخفض" || item.outcome === "Went Down";
+  if (item.trend.includes("صعود") || item.trend.includes("Bull")) return wentUp;
+  if (item.trend.includes("هبوط") || item.trend.includes("Bear")) return wentDown;
   return null;
 }
 function renderHistory() {
   const h = getHistory();
   document.getElementById("histCount").textContent = h.length;
-  const evaluated = h.filter(x => x.outcome && x.trend !== "محايد");
+  const evaluated = h.filter(x => x.outcome && x.trend !== "محايد" && x.trend !== "Neutral");
   const correct = evaluated.filter(predictionCorrect).length;
   const statsBar = document.getElementById("statsBar");
   statsBar.innerHTML = evaluated.length
-    ? `<span>دقة التوقعات المُقيّمة: <b>${Math.round((correct/evaluated.length)*100)}%</b></span><span>(${correct} من ${evaluated.length})</span>`
-    : `<span>لسا ما في توقعات مُقيّمة — بعد ما تعرف نتيجة الأسبوع الفعلية، اختارها من كل عنصر بالأسفل.</span>`;
+    ? t("historyEvaluated", Math.round((correct / evaluated.length) * 100), correct, evaluated.length)
+    : t("historyNoEval");
 
   const list = document.getElementById("histList");
   list.innerHTML = "";
-  if (h.length === 0) { list.innerHTML = '<div style="color:var(--text-dim); font-size:13px; padding:10px;">لسا ما في تحليلات محفوظة.</div>'; return; }
+  if (h.length === 0) { list.innerHTML = `<div style="color:var(--text-dim); font-size:13px; padding:10px;">${t("historyEmpty")}</div>`; return; }
+
+  const outcomes = currentLang === "ar"
+    ? [{v:"",l:"النتيجة الفعلية؟"},{v:"ارتفع",l:"ارتفع"},{v:"انخفض",l:"انخفض"},{v:"تذبذب",l:"تذبذب"}]
+    : [{v:"",l:"Actual Outcome?"},{v:"Went Up",l:"Went Up"},{v:"Went Down",l:"Went Down"},{v:"Flat",l:"Flat"}];
+
   h.forEach(item => {
     const row = document.createElement("div");
     row.className = "hist-item";
     const correctness = predictionCorrect(item);
-    const badge = correctness === true ? '<span style="color:var(--bull); font-size:11px;">✓ صحّت</span>'
-      : correctness === false ? '<span style="color:var(--bear); font-size:11px;">✗ ما صحّت</span>' : "";
+    const badge = correctness === true ? `<span style="color:var(--bull); font-size:11px;">${t("correct")}</span>`
+      : correctness === false ? `<span style="color:var(--bear); font-size:11px;">${t("incorrect")}</span>` : "";
+    const opts = outcomes.map(o => `<option value="${o.v}" ${item.outcome===o.v?"selected":""}>${o.l}</option>`).join("");
     row.innerHTML = `
       <div class="hist-left">
         <span>${dirEmoji(item.trend)}</span>
         <span style="color:${dirColor(item.trend)}; font-size:13px;">${item.trend}</span>
         <span class="mono" style="font-size:11px; color:var(--text-dim);">${item.date}</span>
-        <span class="mono" style="font-size:11px; color:var(--text-dim);">ثقة ${item.confidence}%</span>
+        <span class="mono" style="font-size:11px; color:var(--text-dim);">${t("confLabel")} ${item.confidence}%</span>
         ${badge}
       </div>
       <div class="hist-actions">
-        <select class="outcome" data-ts="${item.ts}">
-          <option value="">النتيجة الفعلية؟</option>
-          <option value="ارتفع" ${item.outcome==="ارتفع"?"selected":""}>ارتفع</option>
-          <option value="انخفض" ${item.outcome==="انخفض"?"selected":""}>انخفض</option>
-          <option value="تذبذب" ${item.outcome==="تذبذب"?"selected":""}>تذبذب</option>
-        </select>
-        <button class="del-btn" data-ts="${item.ts}" title="حذف">🗑</button>
+        <select class="outcome" data-ts="${item.ts}">${opts}</select>
+        <button class="del-btn" data-ts="${item.ts}" title="${currentLang==="ar"?"حذف":"Delete"}">🗑</button>
       </div>`;
     row.querySelector("select").onchange = (e) => setOutcome(item.ts, e.target.value);
     row.querySelector(".del-btn").onclick = () => deleteHistoryItem(item.ts);
@@ -827,7 +1599,9 @@ function renderHistory() {
   });
 }
 
-// init
+// ==================== INIT ====================
+applyLang();
+applyTheme();
 document.getElementById("histCount").textContent = getHistory().length;
 </script>
 </body>
