@@ -102,6 +102,19 @@
   .usage-bar { font-size:12px; color:var(--text-dim); margin-top:10px; }
   .usage-bar.limit-reached { color:var(--bear); }
 
+  /* Black-Scholes specific styles */
+  .bs-card { background:linear-gradient(180deg, rgba(201,162,39,0.06), transparent); border:1px solid rgba(201,162,39,0.25); border-radius:10px; padding:16px; margin-top:16px; }
+  .bs-header { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--gold); margin-bottom:10px; font-weight:700; }
+  .bs-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:720px) { .bs-grid { grid-template-columns:1fr; } }
+  .bs-item { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px 12px; }
+  .bs-label { font-size:11px; color:var(--text-dim); margin-bottom:3px; }
+  .bs-value { font-family: ui-monospace, monospace; font-size:14px; color:var(--gold); }
+  .bs-note { font-size:11.5px; color:var(--text-dim); margin-top:8px; line-height:1.7; }
+  .bs-recommendation { background:rgba(63,167,137,0.1); border:1px solid rgba(63,167,137,0.3); border-radius:6px; padding:10px 14px; margin-top:12px; font-size:13.5px; color:var(--text); }
+  .bs-recommendation.sell { background:rgba(209,88,76,0.1); border-color:rgba(209,88,76,0.3); }
+  .bs-recommendation.wait { background:rgba(142,147,160,0.1); border-color:rgba(142,147,160,0.3); }
+
   /* Landing page */
   .landing { max-width: 980px; margin: 0 auto; }
   .hero { text-align:center; padding:50px 16px 40px; }
@@ -157,6 +170,7 @@
   .user-bar { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:6px; font-size:12px; color:var(--text-dim); }
   .logout-btn { background:none; border:1px solid var(--line); color:var(--text-dim); border-radius:5px; padding:4px 10px; cursor:pointer; font-size:12px; }
 </style>
+<base target="_blank">
 </head>
 <body>
 <div class="wrap">
@@ -178,7 +192,7 @@
         <line x1="10" y1="105" x2="310" y2="105" stroke="#242A32" stroke-width="1"/>
       </svg>
       <h1>تحليل الذهب بالذكاء الاصطناعي، بضغطة زر وحدة</h1>
-      <p>سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، والتحليل الفني الكلاسيكي (RSI, MACD, MAs, Bollinger) — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية.</p>
+      <p>سعر لحظي، بيانات COT الرسمية من CFTC، أهم الأخبار الاقتصادية، التقويم الاقتصادي القادم، التحليل الفني الكلاسيكي (RSI, MACD, MAs, Bollinger)، ونماذج Black-Scholes الاحتمالية — كله مدموج بتحليل واحد واضح مع سيناريوهات مستقبلية وتوصية رقمية.</p>
       <button class="cta-btn" id="landingCtaBtn">ابدأ الآن</button>
     </div>
 
@@ -192,7 +206,7 @@
         <div class="stat-label">نسبة النجاح</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num">4</div>
+        <div class="stat-num">5</div>
         <div class="stat-label">محاور تحليل مدمجة</div>
       </div>
     </div>
@@ -214,15 +228,15 @@
         <div class="feature-desc">أقرب الأحداث عالية الأهمية القادمة قبل ما تفاجئك بتقلبات مفاجئة.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <div class="feature-title">تحليل فني كلاسيكي</div>
-        <div class="feature-desc">RSI، MACD، المتوسطات المتحركة، بولينجر — محسوبة رياضياً من بيانات حقيقية.</div>
+        <div class="feature-icon">📐</div>
+        <div class="feature-title">Black-Scholes احتمالي</div>
+        <div class="feature-desc">التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.</div>
       </div>
     </div>
 
     <div class="about-section">
       <h2>ليش هالموقع؟</h2>
-      <p>بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (4 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
+      <p>بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
     </div>
 
     <div class="landing-footer">
@@ -267,7 +281,7 @@
   <!-- Auto analyze -->
   <div class="auto-card">
     <div class="auto-title">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية (RSI, MACD, MAs, Bollinger) بنفسه، ويحلل الأربعة معاً مباشرة.</div>
+    <div class="auto-sub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية (RSI, MACD, MAs, Bollinger) + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.</div>
     <button id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel">حلّل الآن تلقائياً</span>
@@ -300,6 +314,15 @@
       <div class="split"><div class="split-title mono">التقويم الاقتصادي القادم</div><div class="split-body" id="resCalendar"></div></div>
       <div class="split"><div class="split-title mono">التحليل الفني الكلاسيكي</div><div class="split-body" id="resTechnical"></div></div>
     </div>
+
+    <!-- Black-Scholes Section -->
+    <div class="bs-card" id="bsCard" style="display:none;">
+      <div class="bs-header">📐 Black-Scholes — التقلب والاحتماليات</div>
+      <div class="bs-grid" id="bsGrid"></div>
+      <div class="bs-note" id="bsNote"></div>
+      <div class="bs-recommendation" id="bsRecommendation" style="display:none;"></div>
+    </div>
+
     <div id="driversWrap" style="margin-top:16px;">
       <div class="split-title mono">أهم المحركات</div>
       <ul class="list" id="driversList"></ul>
@@ -401,7 +424,6 @@ async function handleSession(session) {
     return;
   }
   document.getElementById("landingPage").style.display = "none";
-  // فحص حالة التفعيل وتاريخ الانتهاء بجدول profiles
   let isActive = false;
   let expiresAt = null;
   try {
@@ -546,6 +568,9 @@ function renderSources(sources) {
   html += `<div class="src-line"><b>أحداث التقويم الاقتصادي القادمة (USD):</b> ${calendar ? calendar.length : 0}</div>`;
   if (technical) {
     html += `<div class="src-line"><b>المؤشرات الفنية:</b> RSI ${technical.rsi14?.toFixed(1) ?? "-"} · SMA20 ${technical.sma20?.toFixed(2) ?? "-"} · SMA50 ${technical.sma50?.toFixed(2) ?? "-"} (${technical.dataPoints} يوم بيانات${technical.fromCache ? "، مخزّنة مؤقتاً" : ""})</div>`;
+    if (technical.historicalVolatility != null) {
+      html += `<div class="src-line"><b>Black-Scholes:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · Expected Move 7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range 68% [${technical.expectedRange7d?.lower.toFixed(2) ?? "-"} - ${technical.expectedRange7d?.upper.toFixed(2) ?? "-"}]</div>`;
+    }
   } else {
     html += `<div class="src-line"><b>المؤشرات الفنية:</b> تعذر الحساب حالياً</div>`;
   }
@@ -598,13 +623,13 @@ async function autoAnalyze() {
           ? "الرد انقطع قبل ما يكمل (تجاوز حد الطول). جرّب تضغط الزر من جديد، عادة بتكمل بالمحاولة الثانية."
           : "ما قدرنا نعرض النتيجة بالتنسيق المعتاد. هاي نسخة خام من رد النموذج:",
         cot_reading: clean.slice(0,600) || "لا يوجد نص.",
-        news_reading:"", key_drivers:[], key_levels:{support:[],resistance:[]},
+        news_reading:"", black_scholes_reading:"", bs_recommendation:"", key_drivers:[], key_levels:{support:[],resistance:[]},
         risks:["جرّب إعادة المحاولة بعد قليل."],
       };
     }
 
     const entry = { ts: Date.now(), date: new Date().toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"}), ...parsed, outcome:null };
-    showResult(entry);
+    showResult(entry, data._sources);
     saveHistory(entry);
   } catch (e) {
     showError("صار خطأ أثناء التحليل التلقائي: " + (e.message || ""));
@@ -623,7 +648,7 @@ function showError(msg) {
   box.style.display = msg ? "block" : "none";
 }
 
-function showResult(r) {
+function showResult(r, sources) {
   document.getElementById("resultCard").style.display = "block";
   document.getElementById("resDate").textContent = r.date;
   document.getElementById("resIcon").textContent = dirEmoji(r.trend);
@@ -640,6 +665,61 @@ function showResult(r) {
   const csEl = document.getElementById("resCurrentSituation");
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
   else { csEl.style.display = "none"; }
+
+  // Black-Scholes rendering
+  const bsCard = document.getElementById("bsCard");
+  if (r.black_scholes_reading || r.bs_recommendation || (sources && sources.technical && sources.technical.historicalVolatility != null)) {
+    bsCard.style.display = "block";
+    const bsGrid = document.getElementById("bsGrid");
+    let gridHtml = "";
+
+    if (sources && sources.technical) {
+      const t = sources.technical;
+      if (t.historicalVolatility != null) {
+        gridHtml += `<div class="bs-item"><div class="bs-label">التقلب التاريخي (HV)</div><div class="bs-value">${(t.historicalVolatility * 100).toFixed(1)}%</div></div>`;
+        gridHtml += `<div class="bs-item"><div class="bs-label">الحركة المتوقعة (7 أيام)</div><div class="bs-value">±$${t.expectedMove7d?.toFixed(2) ?? "-"}</div></div>`;
+        if (t.expectedRange7d) {
+          gridHtml += `<div class="bs-item"><div class="bs-label">نطاق 68% (أسبوع)</div><div class="bs-value">${t.expectedRange7d.lower.toFixed(0)} - ${t.expectedRange7d.upper.toFixed(0)}</div></div>`;
+        }
+        if (t.probInBollinger7d != null) {
+          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية ضمن بولينجر</div><div class="bs-value">${(t.probInBollinger7d * 100).toFixed(1)}%</div></div>`;
+        }
+        if (t.probAboveSMA20 != null) {
+          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية فوق SMA20</div><div class="bs-value">${(t.probAboveSMA20 * 100).toFixed(1)}%</div></div>`;
+        }
+        if (t.probAboveSMA50 != null) {
+          gridHtml += `<div class="bs-item"><div class="bs-label">احتمالية فوق SMA50</div><div class="bs-value">${(t.probAboveSMA50 * 100).toFixed(1)}%</div></div>`;
+        }
+      }
+    }
+    bsGrid.innerHTML = gridHtml || '<div class="bs-item" style="grid-column:1/-1;"><div class="bs-label">بيانات Black-Scholes</div><div class="bs-value">غير متوفرة حالياً</div></div>';
+
+    const bsNote = document.getElementById("bsNote");
+    if (r.black_scholes_reading) {
+      bsNote.textContent = r.black_scholes_reading;
+      bsNote.style.display = "block";
+    } else {
+      bsNote.style.display = "none";
+    }
+
+    const bsRec = document.getElementById("bsRecommendation");
+    if (r.bs_recommendation) {
+      bsRec.textContent = "💡 " + r.bs_recommendation;
+      bsRec.style.display = "block";
+      // Color coding based on recommendation text
+      const recText = r.bs_recommendation.toLowerCase();
+      bsRec.className = "bs-recommendation";
+      if (recText.includes("بيع") || recText.includes("هبوط") || recText.includes("بيعي")) {
+        bsRec.classList.add("sell");
+      } else if (recText.includes("انتظر") || recText.includes("محايد") || recText.includes("لا")) {
+        bsRec.classList.add("wait");
+      }
+    } else {
+      bsRec.style.display = "none";
+    }
+  } else {
+    bsCard.style.display = "none";
+  }
 
   const scWrap = document.getElementById("scenariosWrap");
   if (r.scenarios && (r.scenarios.bullish || r.scenarios.bearish)) {
