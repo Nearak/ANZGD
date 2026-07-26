@@ -3,6 +3,7 @@
 // بـ10 طلبات بالساعة، وبكذا كل المشتركين بيستفيدوا من نفس النسخة المخزنة مؤقتاً.
 
 import { sma, rsi, macd, bollinger } from "./indicators.js";
+import { historicalVolatility, expectedMove, expectedRange, probabilityAbove, probabilityBelow, probabilityInRange } from "./blackScholes.js";
 
 const CACHE_TTL_MINUTES = 45;
 const CACHE_KEY = "xau_daily_series";
@@ -83,13 +84,44 @@ export async function getTechnicalSnapshot() {
 
   if (!series || series.length < 15) return null;
 
+  const lastClose = series[series.length - 1];
+  const hv = historicalVolatility(series);
+  const riskFreeRate = 0.045;
+
+  // حساب احتماليات الوصول لمستويات رئيسية بناءً على SMA/Bollinger
+  let probAboveSMA20 = null;
+  let probAboveSMA50 = null;
+  let probInBollinger7d = null;
+
+  const sma20Val = series.length >= 20 ? sma(series, 20) : null;
+  const sma50Val = series.length >= 50 ? sma(series, 50) : null;
+  const bb = series.length >= 20 ? bollinger(series, 20, 2) : null;
+
+  if (hv != null) {
+    const T7 = 7 / 365;
+    if (sma20Val != null) probAboveSMA20 = probabilityAbove(lastClose, sma20Val, T7, riskFreeRate, hv);
+    if (sma50Val != null) probAboveSMA50 = probabilityAbove(lastClose, sma50Val, T7, riskFreeRate, hv);
+    if (bb != null) probInBollinger7d = probabilityInRange(lastClose, bb.lower, bb.upper, 7, hv);
+  }
+
   return {
-    lastClose: series[series.length - 1],
-    sma20: series.length >= 20 ? sma(series, 20) : null,
-    sma50: series.length >= 50 ? sma(series, 50) : null,
+    lastClose,
+    sma20: sma20Val,
+    sma50: sma50Val,
     rsi14: rsi(series, 14),
     macd: series.length >= 35 ? macd(series) : null,
-    bollinger: series.length >= 20 ? bollinger(series, 20, 2) : null,
+    bollinger: bb,
+
+    // === إضافات Black-Scholes ===
+    historicalVolatility: hv != null ? hv : null,
+    expectedMove7d: hv != null ? expectedMove(lastClose, hv, 7) : null,
+    expectedMove30d: hv != null ? expectedMove(lastClose, hv, 30) : null,
+    expectedRange7d: hv != null ? expectedRange(lastClose, hv, 7, 0.68) : null,
+    expectedRange7d95: hv != null ? expectedRange(lastClose, hv, 7, 0.95) : null,
+    probAboveSMA20,
+    probAboveSMA50,
+    probInBollinger7d,
+
     dataPoints: series.length,
     fromCache,
   };
