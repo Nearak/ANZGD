@@ -1,6 +1,5 @@
 // Vercel Serverless Function
-// يجيب تلقائياً: سعر الذهب اللحظي + أحدث بيانات COT + أهم عناوين الأخبار
-// من مصادر مجانية عامة بدون أي مفتاح API، ثم يرسلها لـ Google Gemini (مجاني) للتحليل.
+// Bilingual auto-analysis with Black-Scholes integration
 
 import { verifyActiveUser } from "./_lib/auth.js";
 import { getTechnicalSnapshot } from "./_lib/priceHistory.js";
@@ -13,9 +12,7 @@ async function fetchGoldPrice() {
     const r = await fetch("https://api.gold-api.com/price/XAU", { headers: HEADERS });
     if (!r.ok) return null;
     return await r.json();
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
 async function fetchCotRows() {
@@ -26,20 +23,16 @@ async function fetchCotRows() {
     const r = await fetch(url, { headers: HEADERS });
     if (!r.ok) return [];
     return await r.json();
-  } catch (e) {
-    return [];
-  }
+  } catch (e) { return []; }
 }
 
 function parseRssTitles(xml, limit) {
   const items = [...xml.matchAll(/<item[\s\S]*?<\/item>/g)].slice(0, limit);
-  return items
-    .map((m) => {
-      const block = m[0];
-      const titleMatch = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
-      return titleMatch ? titleMatch[1].trim() : null;
-    })
-    .filter(Boolean);
+  return items.map((m) => {
+    const block = m[0];
+    const titleMatch = block.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+    return titleMatch ? titleMatch[1].trim() : null;
+  }).filter(Boolean);
 }
 
 async function fetchRss(url, limit) {
@@ -48,9 +41,7 @@ async function fetchRss(url, limit) {
     if (!r.ok) return [];
     const xml = await r.text();
     return parseRssTitles(xml, limit);
-  } catch (e) {
-    return [];
-  }
+  } catch (e) { return []; }
 }
 
 async function fetchEconomicCalendar() {
@@ -58,12 +49,8 @@ async function fetchEconomicCalendar() {
     const r = await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json", { headers: HEADERS });
     if (!r.ok) return [];
     const data = await r.json();
-    return (data || [])
-      .filter((ev) => ev.country === "USD" && (ev.impact === "High" || ev.impact === "Medium"))
-      .slice(0, 12);
-  } catch (e) {
-    return [];
-  }
+    return (data || []).filter((ev) => ev.country === "USD" && (ev.impact === "High" || ev.impact === "Medium")).slice(0, 12);
+  } catch (e) { return []; }
 }
 
 async function fetchNews() {
@@ -73,12 +60,7 @@ async function fetchNews() {
     '"CPI" OR "Non-Farm Payrolls" OR "PCE inflation" OR "dollar index"',
   ];
   const results = await Promise.all(
-    queries.map((q) =>
-      fetchRss(
-        `https://news.google.com/rss/search?q=${encodeURIComponent(q)}+when:3d&hl=en-US&gl=US&ceid=US:en`,
-        8
-      )
-    )
+    queries.map((q) => fetchRss(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}+when:3d&hl=en-US&gl=US&ceid=US:en`, 8))
   );
   let combined = [...new Set(results.flat())];
   if (combined.length < 4) {
@@ -91,42 +73,9 @@ async function fetchNews() {
   return combined.slice(0, 14);
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "GET" && req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
-    return res.status(405).json({ error: "الطريقة غير مسموحة." });
-  }
+// ==================== SYSTEM PROMPTS ====================
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({
-      error: "GEMINI_API_KEY غير مضبوط على الخادم. أضفه من إعدادات Environment Variables بـ Vercel.",
-    });
-  }
-
-  const auth = await verifyActiveUser(req);
-  if (!auth.ok) {
-    return res.status(auth.status).json({ error: auth.error });
-  }
-
-  const usage = await checkAndIncrementUsage(auth.userId);
-  if (!usage.allowed) {
-    return res.status(429).json({
-      error: `وصلت للحد اليومي المسموح (${usage.limit} تحليلات). جرّب بكرة، أو تواصل معنا لزيادة الحد.`,
-      _usage: usage,
-    });
-  }
-
-  try {
-    const [priceInfo, cotRows, headlines, calendar, technical] = await Promise.all([
-      fetchGoldPrice(),
-      fetchCotRows(),
-      fetchNews(),
-      fetchEconomicCalendar(),
-      getTechnicalSnapshot(),
-    ]);
-
-    const sys = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD)، خبير بتقارير COT الصادرة عن CFTC وبالتحليل الفني الكلاسيكي والرياضيات المالية.
+const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD)، خبير بتقارير COT الصادرة عن CFTC وبالتحليل الفني الكلاسيكي والرياضيات المالية.
 البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، ومؤشرات فنية كلاسيكية + نماذج Black-Scholes احتمالية) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
 
 منهجية التحليل الإلزامية — حلل 5 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
@@ -181,7 +130,66 @@ export default async function handler(req, res) {
 }
 الأولوية القصوى هي إرجاع JSON صالح ومكتمل حتى لو كان مختصراً جداً.`;
 
-    const bsData = technical?.historicalVolatility
+const SYSTEM_PROMPT_EN = `You are a professional market analyst specializing in Gold (XAUUSD), an expert in CFTC COT reports, classical technical analysis, and financial mathematics.
+The data provided below was fetched/computed automatically moments ago from live sources and real mathematical calculations (live price, official CFTC COT data, recent news headlines, weekly economic calendar, classical technical indicators + Black-Scholes probability models) — treat it as real and current data, do not question its freshness.
+
+Mandatory Analysis Methodology — analyze 5 separate pillars first, then synthesize into a final conclusion:
+1. **COT (Institutional Positioning):** Is there excessive concentration among non-commercial speculators? Does the weekly change support trend continuation or suggest a reversal?
+2. **News & Monetary Policy:** What do the available headlines specifically mean (mention them) for interest rate expectations and dollar strength?
+3. **Upcoming Economic Calendar:** What are the nearest high-importance events coming up, when, and what is their likely impact?
+4. **Classical Technical Analysis:** What do the computed indicators (RSI, MACD, Moving Averages, Bollinger Bands) say about current momentum? Any overbought/oversold conditions, crossovers, or band breakouts?
+5. **Black-Scholes & Probabilities:** Based on the historically computed volatility from actual data, what is the expected move this week? What is the probability of price staying within Bollinger Bands? Is current price closer to the edges of the expected range or in the middle? How can these numbers be used to determine more precise entry/exit points?
+
+After analyzing all five, write a final summary that clearly states: Are the five pillars aligned or conflicting? Which pillar carries the most weight in your decision and why?
+
+**Step Six — Synthesis & Future Scenarios:** After analyzing the five pillars, merge them into a unified analysis explaining the current situation, and build two clear future scenarios (bullish and bearish) with the condition that each scenario must mention: **what needs to happen** (e.g., break a specific level, a certain calendar event outcome, or technical confirmation) **for this scenario to materialize**. Also add an "invalidation level" — a price point that if broken, makes the current forecast invalid and requires re-evaluation.
+
+**Step Seven — Black-Scholes Practical Recommendation:** Based on the Expected Range and probabilities, write a brief practical recommendation: Is the current price worth buying/selling now, or waiting for a break of a specific level? Mention the mathematical reason.
+
+Very important: Adhere to the following limits for each text field (you have enough space, no need for excessive brevity):
+- summary: 4 to 5 sentences, summarizing alignment/conflict between the five pillars and the main reason behind the final decision.
+- cot_reading: 2 to 3 sentences explaining specifically the position numbers and their meaning.
+- news_reading: 2 to 3 sentences connecting specific headlines to their expected impact on gold. Completely ignore any headline unrelated to macroeconomics, gold, dollar, or interest rates.
+- calendar_reading: 1 to 2 sentences about the nearest high-importance upcoming event(s) and their likely timing.
+- technical_reading: 2 to 3 sentences specifically interpreting RSI, MACD, moving averages, and price position within Bollinger Bands.
+- black_scholes_reading: 2 to 3 sentences explaining historical volatility, expected move, and the probability range — and how they support or contradict the technical analysis.
+- bs_recommendation: One practical sentence (up to 25 words) — buy/sell/wait recommendation based on expected range and probabilities.
+- current_situation: 3 to 4 sentences describing the current general gold situation in direct, easy language, as an integrated summary for non-specialists.
+- scenarios.bullish: 2 to 3 sentences — the necessary condition for the bullish scenario and the related level.
+- scenarios.bearish: 2 to 3 sentences — the necessary condition for the bearish scenario and the related level.
+- invalidation_level: Just a number or short range (like "3290" or "3280-3290") with less than 8 explanatory words.
+- key_drivers: 3 to 4 items, each a complete clear sentence (up to 18 words).
+- key_levels: Maximum two items per array (support/resistance), each just a number or short range like "3320-3330", computed relative to the actual current price (using SMA/Bollinger/Expected Range levels if they make sense as support/resistance).
+- risks: 2 to 3 items, each a clear sentence (up to 18 words).
+
+If any data is empty or unavailable (fetch/calculation failed), mention that clearly in the appropriate text field instead of ignoring it or making up data.
+
+Respond ONLY with valid and complete JSON (ensure all brackets and quotes are closed) without any additional text before or after and without Markdown, using exactly these keys:
+{
+  "trend": "Bullish" | "Bearish" | "Neutral",
+  "score": number from -100 to 100,
+  "confidence": number from 0 to 100,
+  "summary": "...",
+  "cot_reading": "...",
+  "news_reading": "...",
+  "calendar_reading": "...",
+  "technical_reading": "...",
+  "black_scholes_reading": "...",
+  "bs_recommendation": "...",
+  "current_situation": "...",
+  "scenarios": {"bullish": "...", "bearish": "..."},
+  "invalidation_level": "...",
+  "key_drivers": ["...", "...", "..."],
+  "key_levels": {"support": ["..."], "resistance": ["..."]},
+  "risks": ["...", "..."]
+}
+Top priority is returning valid and complete JSON even if very brief.`;
+
+function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, lang) {
+  const isAr = lang === 'ar';
+
+  const bsData = technical?.historicalVolatility
+    ? (isAr 
       ? `**بيانات Black-Scholes (محسوبة رياضياً من بيانات تاريخية حقيقية):**
 - التقلب التاريخي السنوي (Historical Volatility): ${(technical.historicalVolatility * 100).toFixed(1)}%
 - الحركة المتوقعة خلال 7 أيام: ±$${technical.expectedMove7d.toFixed(2)} (من ${technical.lastClose.toFixed(2)})
@@ -192,11 +200,22 @@ export default async function handler(req, res) {
 - احتمالية أن يكون السعر أعلى من SMA20 بعد أسبوع: ${technical.probAboveSMA20 != null ? (technical.probAboveSMA20 * 100).toFixed(1) + "%" : "غير محسوبة"}
 - احتمالية أن يكون السعر أعلى من SMA50 بعد أسبوع: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "غير محسوبة"}
 `
-      : "**بيانات Black-Scholes:** تعذر حساب التقلب التاريخي (بيانات غير كافية).";
+      : `**Black-Scholes Data (mathematically computed from actual historical data):**
+- Annual Historical Volatility: ${(technical.historicalVolatility * 100).toFixed(1)}%
+- Expected Move over 7 days: ±$${technical.expectedMove7d.toFixed(2)} (from ${technical.lastClose.toFixed(2)})
+- Expected Move over 30 days: ±$${technical.expectedMove30d.toFixed(2)}
+- Expected Range 68% confidence (1 week): ${technical.expectedRange7d.lower.toFixed(2)} - ${technical.expectedRange7d.upper.toFixed(2)}
+- Expected Range 95% confidence (1 week): ${technical.expectedRange7d95.lower.toFixed(2)} - ${technical.expectedRange7d95.upper.toFixed(2)}
+- Probability of staying within Bollinger Bands this week: ${technical.probInBollinger7d != null ? (technical.probInBollinger7d * 100).toFixed(1) + "%" : "Not computed"}
+- Probability of price being above SMA20 in one week: ${technical.probAboveSMA20 != null ? (technical.probAboveSMA20 * 100).toFixed(1) + "%" : "Not computed"}
+- Probability of price being above SMA50 in one week: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "Not computed"}
+`)
+    : (isAr 
+      ? "**بيانات Black-Scholes:** تعذر حساب التقلب التاريخي (بيانات غير كافية)."
+      : "**Black-Scholes Data:** Failed to compute historical volatility (insufficient data).");
 
-    const userMsg = `السعر الحالي الفعلي للذهب XAUUSD الآن: ${
-      priceInfo ? `${priceInfo.price} دولار (آخر تحديث: ${priceInfo.updatedAtReadable})` : "تعذر جلب السعر الآن من المصدر الحي."
-    }
+  if (isAr) {
+    return `السعر الحالي الفعلي للذهب XAUUSD الآن: ${priceInfo ? `${priceInfo.price} دولار (آخر تحديث: ${priceInfo.updatedAtReadable})` : "تعذر جلب السعر الآن من المصدر الحي."}
 
 أحدث بيانات تقرير COT (Legacy Futures Only - Gold) من CFTC مباشرة، بصيغة JSON خام (قد يحتوي على أكثر من أسبوع للمقارنة، الأحدث أولاً):
 """
@@ -226,6 +245,81 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
 ${bsData}
 
 حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
+  } else {
+    return `Current live price of Gold XAUUSD right now: ${priceInfo ? `$${priceInfo.price} (Last update: ${priceInfo.updatedAtReadable})` : "Failed to fetch live price from source."}
+
+Latest COT report data (Legacy Futures Only - Gold) directly from CFTC, raw JSON format (may contain multiple weeks for comparison, newest first):
+"""
+${cotRows && cotRows.length ? JSON.stringify(cotRows, null, 2) : "Failed to fetch COT data currently from live source."}
+"""
+
+Most important economic headlines related to gold right now (from live news sources):
+"""
+${headlines && headlines.length ? headlines.map((h, i) => `${i + 1}. ${h}`).join("\n") : "Failed to fetch headlines currently from live source."}
+"""
+
+Economic calendar for this week — upcoming USD high/medium importance events (not happened yet), raw JSON format:
+"""
+${calendar && calendar.length ? JSON.stringify(calendar, null, 2) : "Failed to fetch economic calendar currently from live source."}
+"""
+
+Classical technical indicators — actually computed (mathematically) from real daily price data (last ~${technical?.dataPoints || "?"} days):
+"""
+${technical ? `- Last daily close price used in calculations: ${technical.lastClose.toFixed(2)}
+- Simple Moving Average 20-day (SMA20): ${technical.sma20 != null ? technical.sma20.toFixed(2) : "Insufficient data"}
+- Simple Moving Average 50-day (SMA50): ${technical.sma50 != null ? technical.sma50.toFixed(2) : "Insufficient data"}
+- Relative Strength Index RSI(14): ${technical.rsi14 != null ? technical.rsi14.toFixed(1) : "Insufficient data"}
+- MACD(12,26,9): ${technical.macd ? `MACD line = ${technical.macd.macd.toFixed(2)}, Signal line = ${technical.macd.signal.toFixed(2)}, Histogram = ${technical.macd.histogram.toFixed(2)}` : "Insufficient data"}
+- Bollinger Bands (20, 2 std dev): Upper = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}, Middle = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}, Lower = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "Failed to compute technical indicators currently (historical data not available)."}
+"""
+
+${bsData}
+
+Analyze the situation and give me your weekly forecast adhering ONLY to the required JSON format.`;
+  }
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ error: "Method not allowed." });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({
+      error: "GEMINI_API_KEY not set on server. Add it in Vercel Environment Variables.",
+    });
+  }
+
+  const auth = await verifyActiveUser(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
+  }
+
+  const usage = await checkAndIncrementUsage(auth.userId);
+  if (!usage.allowed) {
+    return res.status(429).json({
+      error: `Daily limit reached (${usage.limit} analyses). Try again tomorrow or contact us to increase your limit.`,
+      _usage: usage,
+    });
+  }
+
+  // Detect language preference
+  const lang = req.body?.lang || req.headers["x-preferred-lang"] || "ar";
+  const isAr = lang === 'ar';
+
+  try {
+    const [priceInfo, cotRows, headlines, calendar, technical] = await Promise.all([
+      fetchGoldPrice(),
+      fetchCotRows(),
+      fetchNews(),
+      fetchEconomicCalendar(),
+      getTechnicalSnapshot(),
+    ]);
+
+    const sys = isAr ? SYSTEM_PROMPT_AR : SYSTEM_PROMPT_EN;
+    const userMsg = buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, lang);
 
     const model = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -248,14 +342,14 @@ ${bsData}
     const data = await response.json();
     if (!response.ok) {
       return res.status(response.status).json({
-        error: data?.error?.message || "حدث خطأ أثناء الاتصال بـ Gemini API.",
+        error: data?.error?.message || "Error connecting to Gemini API.",
       });
     }
 
     const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
     const finishReason = data?.candidates?.[0]?.finishReason;
     if (!text) {
-      return res.status(502).json({ error: "لم يرجع Gemini أي نص (finishReason: " + (finishReason || "غير معروف") + ")." });
+      return res.status(502).json({ error: "Gemini returned no text (finishReason: " + (finishReason || "unknown") + ")." });
     }
     if (finishReason === "MAX_TOKENS") {
       return res.status(200).json({
@@ -272,6 +366,6 @@ ${bsData}
       _usage: usage,
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "خطأ غير متوقع بالخادم." });
+    return res.status(500).json({ error: err.message || "Unexpected server error." });
   }
 }
