@@ -83,10 +83,6 @@ body {
 .hidden { display: none !important; }
 .fade-in { animation: fadeIn 0.5s ease forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(201,162,39,0); }
-}
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
 @keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
@@ -176,8 +172,7 @@ label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 
 
 /* ============ GRID ============ */
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-@media (max-width: 720px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
 
 /* ============ CHIPS & BADGES ============ */
 .chip {
@@ -348,34 +343,6 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
 .bs-recommendation.sell { background: var(--bear-glow); border-color: rgba(209,88,76,0.3); }
 .bs-recommendation.wait { background: rgba(142,147,160,0.08); border-color: rgba(142,147,160,0.25); }
 
-/* BS Calculator Widget */
-.bs-calc-widget {
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 18px; margin-top: 16px;
-}
-.bs-calc-widget h4 { font-size: 13px; color: var(--gold); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
-.bs-calc-result {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px;
-}
-@media (max-width: 600px) { .bs-calc-result { grid-template-columns: repeat(2, 1fr); } }
-.bs-calc-output {
-  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: 10px; text-align: center;
-}
-.bs-calc-output .label { font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
-.bs-calc-output .value { font-family: var(--font-mono); font-size: 16px; color: var(--gold); font-weight: 700; }
-
-/* Probability Calculator */
-.prob-calc { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
-.prob-result-bar {
-  height: 28px; border-radius: var(--radius-sm); overflow: hidden;
-  background: var(--bg); display: flex; margin-top: 10px;
-}
-.prob-bar-segment {
-  height: 100%; display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 600; color: #fff; transition: width 0.6s ease;
-}
-
 /* Quick Stats Bar */
 .quick-stats {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
@@ -411,6 +378,27 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
   font-size: 12px; color: var(--text-dim); flex: 1; text-align: left;
 }
 
+/* Tabs */
+.tab-btn {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tab-btn.active {
+  background: var(--gold-dim);
+  color: var(--gold-bright);
+  border-color: var(--gold-soft);
+}
+.tab-content {
+  animation: fadeIn 0.3s ease;
+  margin-top: 12px;
+}
+
 /* History */
 .hist-item {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -428,33 +416,6 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
 
 /* Footer */
 footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--text-dim); padding: 0 16px; }
-
-/* Animations for loading */
-.skeleton {
-  background: linear-gradient(90deg, var(--panel) 25%, var(--line) 50%, var(--panel) 75%);
-  background-size: 200% 100%; animation: skeleton 1.5s infinite;
-  border-radius: 4px; height: 16px; margin-bottom: 8px;
-}
-@keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-/* Range visualizer */
-.range-visual {
-  position: relative; height: 40px; background: var(--panel); border-radius: var(--radius-sm);
-  margin: 12px 0; overflow: hidden; border: 1px solid var(--line);
-}
-.range-zone {
-  position: absolute; top: 0; bottom: 0;
-  background: linear-gradient(90deg, var(--bear-glow), transparent, var(--bull-glow));
-}
-.range-current {
-  position: absolute; top: -4px; bottom: -4px; width: 3px;
-  background: var(--gold); border-radius: 2px; z-index: 2;
-  box-shadow: 0 0 8px var(--gold);
-}
-.range-labels {
-  display: flex; justify-content: space-between; font-size: 11px;
-  color: var(--text-dim); font-family: var(--font-mono); margin-top: 4px;
-}
 
 /* Responsive */
 @media (max-width: 480px) {
@@ -527,7 +488,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
       <div class="stat-label" data-i18n="statAccuracy">نسبة النجاح</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">5</div>
+      <div class="stat-num">6</div>
       <div class="stat-label" data-i18n="statPillars">محاور تحليل مدمجة</div>
     </div>
   </div>
@@ -553,11 +514,21 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
       <div class="feature-title" data-i18n="featBS">Black-Scholes احتمالي</div>
       <div class="feature-desc" data-i18n="featBSDesc">التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.</div>
     </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏦</div>
+      <div class="feature-title">السندات والدولار</div>
+      <div class="feature-desc">تحليل العلاقة العكسية بين عوائد السندات الأمريكية ومؤشر الدولار وتأثيرها على الذهب.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏰</div>
+      <div class="feature-title">نظرة يومية</div>
+      <div class="feature-desc">تحليل متعدد الفريمات (1س، 4س، يومي) مع مستويات دعم ومقاومة للمتداول اليومي.</div>
+    </div>
   </div>
 
   <div class="about-section">
     <h2 data-i18n="aboutTitle">ليش هالموقع؟</h2>
-    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.</p>
+    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين.</p>
   </div>
 
   <div class="landing-footer">
@@ -643,7 +614,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
   <!-- Auto Analyze -->
   <div class="auto-card">
     <div class="auto-title" data-i18n="autoTitle">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.</div>
+    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار، ويحلل كل شي بضغطة زر.</div>
     <button class="btn-primary" id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel" data-i18n="btnAnalyze">حلّل الآن تلقائياً</span>
@@ -662,129 +633,52 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
           <span class="conf-badge" id="resConf"></span>
         </div>
       </div>
-      <svg id="gauge" viewBox="0 0 220 130" width="200" height="118"></svg>
+      <svg id="gauge" viewBox="0 0 220 130" width="180" height="106"></svg>
     </div>
     <p class="summary" id="resSummary"></p>
     <div class="current-situation" id="resCurrentSituation" style="display:none;"></div>
     <div class="current-situation" id="resDailyOutlook" style="display:none; background:var(--panel); border-color:var(--gold-dim);"></div>
 
-    <div class="grid2">
-      <div class="split"><div class="split-title mono">📊 <span data-i18n="readCot">قراءة COT</span></div><div class="split-body" id="resCot"></div></div>
-      <div class="split"><div class="split-title mono">📰 <span data-i18n="readNews">قراءة الأخبار</span></div><div class="split-body" id="resNews"></div></div>
-    </div>
-    <div class="grid2" style="margin-top:16px;">
-      <div class="split"><div class="split-title mono">📅 <span data-i18n="readCalendar">التقويم الاقتصادي القادم</span></div><div class="split-body" id="resCalendar"></div></div>
-      <div class="split"><div class="split-title mono">📈 <span data-i18n="readTechnical">التحليل الفني الكلاسيكي</span></div><div class="split-body" id="resTechnical"></div></div>
+    <!-- Tabs -->
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 8px;">
+      <button class="btn-secondary tab-btn active" data-tab="tab1">📊 التحليل التفصيلي</button>
+      <button class="btn-secondary tab-btn" data-tab="tab2">📐 Black-Scholes</button>
     </div>
 
-    <!-- Black-Scholes Analysis -->
-    <div class="bs-card" id="bsCard" style="display:none;">
-      <div class="bs-header">📐 <span data-i18n="bsTitle">Black-Scholes — التقلب والاحتماليات</span></div>
-      <div class="bs-grid" id="bsGrid"></div>
-      <div class="bs-note" id="bsNote"></div>
-      <div class="bs-recommendation" id="bsRecommendation" style="display:none;"></div>
-    </div>
-
-    <!-- Black-Scholes Interactive Calculator -->
-    <div class="bs-calc-widget" id="bsCalcWidget" style="display:none;">
-      <h4>🧮 <span data-i18n="bsCalcTitle">حاسبة Black-Scholes التفاعلية</span></h4>
-      <div class="form-row">
-        <div>
-          <label data-i18n="labelSpot">السعر الحالي (Spot)</label>
-          <input type="number" id="calcSpot" step="0.01" />
-        </div>
-        <div>
-          <label data-i18n="labelStrike">سعر التنفيذ (Strike)</label>
-          <input type="number" id="calcStrike" step="0.01" />
-        </div>
+    <!-- Tab 1: Detailed Analysis -->
+    <div id="tab1" class="tab-content">
+      <div class="grid2">
+        <div class="split"><div class="split-title mono">📊 COT</div><div class="split-body" id="resCot"></div></div>
+        <div class="split"><div class="split-title mono">📰 الأخبار</div><div class="split-body" id="resNews"></div></div>
       </div>
-      <div class="form-row" style="margin-top:10px;">
-        <div>
-          <label data-i18n="labelDays">الأيام حتى الاستحقاق</label>
-          <input type="number" id="calcDays" value="7" min="1" />
-        </div>
-        <div>
-          <label data-i18n="labelVol">التقلب السنوي (%)</label>
-          <input type="number" id="calcVol" step="0.1" />
-        </div>
+      <div class="grid2" style="margin-top:16px;">
+        <div class="split"><div class="split-title mono">📅 التقويم</div><div class="split-body" id="resCalendar"></div></div>
+        <div class="split"><div class="split-title mono">📈 الفني</div><div class="split-body" id="resTechnical"></div></div>
       </div>
-      <div class="form-row" style="margin-top:10px;">
-        <div>
-          <label data-i18n="labelRate">معدل الفائدة الخالي من المخاطر (%)</label>
-          <input type="number" id="calcRate" value="4.5" step="0.1" />
-        </div>
-        <div>
-          <label data-i18n="labelType">نوع الخيار</label>
-          <select id="calcType">
-            <option value="call" data-i18n="optCall">شراء (Call)</option>
-            <option value="put" data-i18n="optPut">بيع (Put)</option>
-          </select>
-        </div>
+      <div id="scenariosWrap" style="margin-top:16px; display:none;" class="grid2">
+        <div class="scenario-box scenario-bull"><div class="scenario-title" style="color:var(--bull);">📈 صعودي</div><div id="resScenarioBull" style="font-size:13.5px; line-height:1.8;"></div></div>
+        <div class="scenario-box scenario-bear"><div class="scenario-title" style="color:var(--bear);">📉 هبوطي</div><div id="resScenarioBear" style="font-size:13.5px; line-height:1.8;"></div></div>
       </div>
-      <button class="btn-primary" style="margin-top:14px; width:100%;" id="calcBtn" data-i18n="btnCalc">احسب</button>
-      <div class="bs-calc-result" id="calcResult" style="display:none;"></div>
-    </div>
-
-    <!-- Probability Calculator -->
-    <div class="bs-calc-widget" id="probWidget" style="display:none;">
-      <h4>🎯 <span data-i18n="probTitle">حاسبة الاحتمالية</span></h4>
-      <div class="form-row">
-        <div>
-          <label data-i18n="labelTarget">السعر المستهدف</label>
-          <input type="number" id="probTarget" step="0.01" />
-        </div>
-        <div>
-          <label data-i18n="labelDaysProb">الفترة (أيام)</label>
-          <input type="number" id="probDays" value="7" min="1" />
-        </div>
+      <div class="invalidation-line" id="resInvalidation" style="display:none;"></div>
+      <div id="driversWrap" style="margin-top:16px;"><div class="split-title mono">🔑 المحركات</div><ul class="list" id="driversList"></ul></div>
+      <div class="grid2" id="levelsWrap" style="margin-top:16px;">
+        <div><div class="split-title mono" style="color:var(--bull);">🟢 دعم</div><div id="supportChips"></div></div>
+        <div><div class="split-title mono" style="color:var(--bear);">🔴 مقاومة</div><div id="resistanceChips"></div></div>
       </div>
-      <button class="btn-primary" style="margin-top:14px; width:100%;" id="probBtn" data-i18n="btnCalcProb">احسب الاحتمالية</button>
-      <div class="prob-calc" id="probResult" style="display:none;">
-        <div class="prob-result-bar" id="probBar"></div>
-        <div class="range-labels">
-          <span data-i18n="probBelow">أقل</span>
-          <span data-i18n="probAbove">أعلى</span>
-        </div>
+      <div id="risksWrap" style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
+        <div class="split-title mono" style="color:var(--text-dim);">⚠️ مخاطر</div>
+        <ul class="list" id="risksList" style="color:var(--text-dim);"></ul>
       </div>
     </div>
 
-    <!-- Key Drivers -->
-    <div id="driversWrap" style="margin-top:16px;">
-      <div class="split-title mono">🔑 <span data-i18n="keyDriversTitle">أهم المحركات</span></div>
-      <ul class="list" id="driversList"></ul>
-    </div>
-
-    <!-- Key Levels -->
-    <div class="grid2" id="levelsWrap" style="margin-top:16px;">
-      <div>
-        <div class="split-title mono" style="color:var(--bull);">🟢 <span data-i18n="supportLevels">مستويات الدعم</span></div>
-        <div id="supportChips"></div>
+    <!-- Tab 2: Black-Scholes -->
+    <div id="tab2" class="tab-content" style="display:none;">
+      <div class="bs-card" id="bsCard" style="display:none; margin-top:0;">
+        <div class="bs-header">📐 Black-Scholes — التقلب والاحتماليات</div>
+        <div class="bs-grid" id="bsGrid"></div>
+        <div class="bs-note" id="bsNote"></div>
+        <div class="bs-recommendation" id="bsRecommendation" style="display:none;"></div>
       </div>
-      <div>
-        <div class="split-title mono" style="color:var(--bear);">🔴 <span data-i18n="resistanceLevels">مستويات المقاومة</span></div>
-        <div id="resistanceChips"></div>
-      </div>
-    </div>
-
-    <!-- Scenarios -->
-    <div class="grid2" id="scenariosWrap" style="margin-top:16px; display:none;">
-      <div class="scenario-box scenario-bull">
-        <div class="scenario-title" style="color:var(--bull);">📈 <span data-i18n="scenarioBull">السيناريو الصعودي</span></div>
-        <div id="resScenarioBull" style="font-size:13.5px; line-height:1.8;"></div>
-      </div>
-      <div class="scenario-box scenario-bear">
-        <div class="scenario-title" style="color:var(--bear);">📉 <span data-i18n="scenarioBear">السيناريو الهبوطي</span></div>
-        <div id="resScenarioBear" style="font-size:13.5px; line-height:1.8;"></div>
-      </div>
-    </div>
-
-    <!-- Invalidation -->
-    <div class="invalidation-line" id="resInvalidation" style="display:none;"></div>
-
-    <!-- Risks -->
-    <div id="risksWrap" style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
-      <div class="split-title mono" style="color:var(--text-dim);">⚠️ <span data-i18n="risksTitle">سيناريوهات مخالفة / مخاطر</span></div>
-      <ul class="list" id="risksList" style="color:var(--text-dim);"></ul>
     </div>
   </div>
 
@@ -827,7 +721,7 @@ const i18n = {
     featBS: "Black-Scholes احتمالي",
     featBSDesc: "التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.",
     aboutTitle: "ليش هالموقع؟",
-    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (5 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة بدل رأي واحد جامد.",
+    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين.",
     disclaimer: "هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.",
     authLogin: "تسجيل الدخول",
     authSignup: "إنشاء حساب جديد",
@@ -852,14 +746,13 @@ const i18n = {
     qsRange: "النطاق المتوقع",
     qs68Conf: "ثقة 68%",
     autoTitle: "⚡ تحليل تلقائي كامل",
-    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية بنفسه، ويحلل الخمسة معاً مباشرة.",
+    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار، ويحلل كل شي بضغطة زر.",
     btnAnalyze: "حلّل الآن تلقائياً",
     readCot: "قراءة COT",
     readNews: "قراءة الأخبار",
     readCalendar: "التقويم الاقتصادي القادم",
     readTechnical: "التحليل الفني الكلاسيكي",
     bsTitle: "Black-Scholes — التقلب والاحتماليات",
-    bsCalcTitle: "حاسبة Black-Scholes التفاعلية",
     labelSpot: "السعر الحالي (Spot)",
     labelStrike: "سعر التنفيذ (Strike)",
     labelDays: "الأيام حتى الاستحقاق",
@@ -905,7 +798,6 @@ const i18n = {
     correct: "✓ صحّت",
     incorrect: "✗ ما صحّت",
     daysLeft: (d) => `باقي ${d} يوم على الاشتراك`,
-    // إضافات للكلمات الجديدة
     macroYield: "عائد السندات 10 سنوات",
     macroDXY: "مؤشر الدولار (DXY)",
     dailyOutlookTitle: "📊 نظرة المتداول اليومي",
@@ -929,7 +821,7 @@ const i18n = {
     featBS: "Black-Scholes Probability",
     featBSDesc: "Historical volatility, expected move, and probability range — for a buy/sell decision backed by math.",
     aboutTitle: "Why This Platform?",
-    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (5 separate pillars before the conclusion), and gives you clear future scenarios instead of a single rigid opinion.",
+    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (6 separate pillars), and gives you clear future scenarios and daily trader outlook.",
     disclaimer: "This platform is an educational analytical tool powered by AI, not investment advice or licensed financial consulting. The final decision and responsibility always rest with you.",
     authLogin: "Sign In",
     authSignup: "Create Account",
@@ -954,14 +846,13 @@ const i18n = {
     qsRange: "Expected Range",
     qs68Conf: "68% Confidence",
     autoTitle: "⚡ Full Auto Analysis",
-    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models, and analyzes all five together instantly.",
+    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models + treasury & DXY data, and analyzes everything with one click.",
     btnAnalyze: "Analyze Now",
     readCot: "COT Reading",
     readNews: "News Reading",
     readCalendar: "Upcoming Economic Calendar",
     readTechnical: "Classical Technical Analysis",
     bsTitle: "Black-Scholes — Volatility & Probabilities",
-    bsCalcTitle: "Interactive Black-Scholes Calculator",
     labelSpot: "Current Price (Spot)",
     labelStrike: "Strike Price",
     labelDays: "Days to Expiry",
@@ -1031,7 +922,6 @@ function applyLang() {
     if (val) el.textContent = typeof val === "string" ? val : el.textContent;
   });
   document.getElementById("langLabel").textContent = currentLang === "ar" ? "English" : "العربية";
-  // Update dynamic text
   updateAuthUI();
   renderHistory();
   const usage = lastUsage;
@@ -1065,99 +955,6 @@ function showToast(message, type = "") {
   container.appendChild(toast);
   setTimeout(() => { toast.remove(); }, 3500);
 }
-
-// ==================== BLACK-SCHOLES MATH ====================
-function nd(x) {
-  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
-}
-function N(x) {
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
-  const a4 = -1.453152027, a5 = 1.061405429;
-  const p = 0.3275911;
-  const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x) / Math.sqrt(2);
-  const t = 1 / (1 + p * x);
-  const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-  return 0.5 * (1 + sign * y);
-}
-function bsCalc(S, K, T, r, sigma, type) {
-  if (T <= 0 || sigma <= 0 || S <= 0 || K <= 0) return null;
-  const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
-  const d2 = d1 - sigma * Math.sqrt(T);
-  const Nd1 = N(d1), Nd2 = N(d2), Nmd1 = N(-d1), Nmd2 = N(-d2);
-  let price, delta, gamma, theta, vega, rho;
-  if (type === "call") {
-    price = S * Nd1 - K * Math.exp(-r * T) * Nd2;
-    delta = Nd1;
-    rho = K * T * Math.exp(-r * T) * Nd2 / 100;
-  } else {
-    price = K * Math.exp(-r * T) * Nmd2 - S * Nmd1;
-    delta = -Nmd1;
-    rho = -K * T * Math.exp(-r * T) * Nmd2 / 100;
-  }
-  gamma = nd(d1) / (S * sigma * Math.sqrt(T));
-  theta = -(S * nd(d1) * sigma) / (2 * Math.sqrt(T));
-  theta -= r * K * Math.exp(-r * T) * (type === "call" ? Nd2 : -Nmd2);
-  theta /= 365;
-  vega = S * nd(d1) * Math.sqrt(T) / 100;
-  return { price, delta, gamma, theta, vega, rho };
-}
-function probAbove(S, K, T, r, sigma) {
-  if (T <= 0) return S > K ? 1 : 0;
-  const d2 = (Math.log(S / K) + (r - 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
-  return N(d2);
-}
-
-// ==================== BS CALCULATOR UI ====================
-document.getElementById("calcBtn").onclick = () => {
-  const S = parseFloat(document.getElementById("calcSpot").value);
-  const K = parseFloat(document.getElementById("calcStrike").value);
-  const days = parseFloat(document.getElementById("calcDays").value);
-  const vol = parseFloat(document.getElementById("calcVol").value) / 100;
-  const rate = parseFloat(document.getElementById("calcRate").value) / 100;
-  const type = document.getElementById("calcType").value;
-  if (!S || !K || !days || !vol) { showToast(t("toastAnalyzeError") + "Invalid inputs", "error"); return; }
-  const T = days / 365;
-  const res = bsCalc(S, K, T, rate, vol, type);
-  if (!res) { showToast("Calculation error", "error"); return; }
-  const resultDiv = document.getElementById("calcResult");
-  resultDiv.style.display = "grid";
-  const labels = currentLang === "ar" ? {
-    price: "القيمة العادلة", delta: "دلتا", gamma: "جاما", theta: "ثيتا", vega: "فيغا", rho: "رو"
-  } : {
-    price: "Fair Value", delta: "Delta", gamma: "Gamma", theta: "Theta", vega: "Vega", rho: "Rho"
-  };
-  resultDiv.innerHTML = `
-    <div class="bs-calc-output"><div class="label">${labels.price}</div><div class="value">$${res.price.toFixed(2)}</div></div>
-    <div class="bs-calc-output"><div class="label">${labels.delta}</div><div class="value">${res.delta.toFixed(3)}</div></div>
-    <div class="bs-calc-output"><div class="label">${labels.gamma}</div><div class="value">${res.gamma.toFixed(4)}</div></div>
-    <div class="bs-calc-output"><div class="label">${labels.theta}</div><div class="value">${res.theta.toFixed(3)}</div></div>
-    <div class="bs-calc-output"><div class="label">${labels.vega}</div><div class="value">${res.vega.toFixed(3)}</div></div>
-    <div class="bs-calc-output"><div class="label">${labels.rho}</div><div class="value">${res.rho.toFixed(3)}</div></div>
-  `;
-};
-
-// ==================== PROBABILITY CALCULATOR UI ====================
-document.getElementById("probBtn").onclick = () => {
-  const target = parseFloat(document.getElementById("probTarget").value);
-  const days = parseFloat(document.getElementById("probDays").value);
-  if (!target || !days || !lastTechnical) { showToast("Missing data", "error"); return; }
-  const S = lastTechnical.lastClose;
-  const sigma = lastTechnical.historicalVolatility;
-  const T = days / 365;
-  const r = 0.045;
-  const pAbove = probAbove(S, target, T, r, sigma);
-  const pBelow = 1 - pAbove;
-  const resultDiv = document.getElementById("probResult");
-  resultDiv.style.display = "block";
-  const bar = document.getElementById("probBar");
-  const belowPct = Math.round(pBelow * 100);
-  const abovePct = Math.round(pAbove * 100);
-  bar.innerHTML = `
-    <div class="prob-bar-segment" style="width:${belowPct}%; background:var(--bear);">${belowPct}% ${currentLang==="ar"?"أقل":"Below"}</div>
-    <div class="prob-bar-segment" style="width:${abovePct}%; background:var(--bull);">${abovePct}% ${currentLang==="ar"?"أعلى":"Above"}</div>
-  `;
-};
 
 // ==================== AUTH ====================
 let sb = null;
@@ -1344,6 +1141,17 @@ document.getElementById("histToggle").onclick = () => {
   if (!open) renderHistory();
 };
 
+// ==================== TAB SWITCHING ====================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+    const target = document.getElementById(btn.dataset.tab);
+    if (target) target.style.display = 'block';
+  };
+});
+
 // ==================== AUTO ANALYZE ====================
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
@@ -1414,10 +1222,6 @@ async function autoAnalyze() {
     if (data._sources?.technical) {
       lastTechnical = data._sources.technical;
       updateQuickStats(data._sources.technical, data._sources.price);
-      // Pre-fill calculator inputs
-      document.getElementById("calcSpot").value = data._sources.technical.lastClose.toFixed(2);
-      document.getElementById("calcVol").value = data._sources.technical.historicalVolatility ? (data._sources.technical.historicalVolatility * 100).toFixed(1) : "20";
-      document.getElementById("probTarget").value = data._sources.technical.lastClose.toFixed(2);
     }
 
     const textBlock = (data.content || []).find(b => b.type === "text");
@@ -1488,7 +1292,6 @@ function showResult(r, sources) {
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
   else { csEl.style.display = "none"; }
 
-  // عرض daily_outlook
   const dailyEl = document.getElementById("resDailyOutlook");
   if (r.daily_outlook) {
     dailyEl.innerHTML = `<span style="font-weight:600; color:var(--gold);">${t("dailyOutlookTitle")}</span><br>${r.daily_outlook}`;
@@ -1497,16 +1300,14 @@ function showResult(r, sources) {
     dailyEl.style.display = "none";
   }
 
-  // Macro Card (Treasury & DXY)
+  // Macro Card
   const macroCard = document.getElementById("macroCard");
   if (r.treasury_yield_value != null || r.dxy_value != null) {
     macroCard.style.display = "block";
     document.getElementById("macroYield").textContent = r.treasury_yield_value != null ? r.treasury_yield_value.toFixed(2) + '%' : '—';
     document.getElementById("macroDXY").textContent = r.dxy_value != null ? r.dxy_value.toFixed(2) : '—';
-    // تأثير مختصر
     let impact = '';
     if (r.treasury_yield_value != null && r.dxy_value != null) {
-      // مثال بسيط: إذا كان العائد مرتفع والدولار قوي فالضغط على الذهب
       if (r.treasury_yield_value > 4.0 && r.dxy_value > 105) {
         impact = currentLang === "ar" ? 'ضغط على الذهب (علاقة عكسية)' : 'Pressure on gold (inverse correlation)';
       } else if (r.treasury_yield_value < 3.5 && r.dxy_value < 103) {
@@ -1520,7 +1321,7 @@ function showResult(r, sources) {
     macroCard.style.display = "none";
   }
 
-  // Black-Scholes Card
+  // Black-Scholes Card (Tab 2)
   const bsCard = document.getElementById("bsCard");
   const bsSources = sources?.technical;
   if (r.black_scholes_reading || r.bs_recommendation || (bsSources && bsSources.historicalVolatility != null)) {
@@ -1563,10 +1364,6 @@ function showResult(r, sources) {
   } else {
     bsCard.style.display = "none";
   }
-
-  // Show calculator widgets
-  document.getElementById("bsCalcWidget").style.display = "block";
-  document.getElementById("probWidget").style.display = "block";
 
   // Scenarios
   const scWrap = document.getElementById("scenariosWrap");
