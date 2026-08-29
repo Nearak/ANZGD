@@ -1,5 +1,6 @@
 // Vercel Serverless Function
 // Bilingual auto-analysis with Black-Scholes integration
+// Added: Treasury Yield & DXY, and daily outlook for intraday traders.
 
 import { verifyActiveUser } from "./_lib/auth.js";
 import { getTechnicalSnapshot } from "./_lib/priceHistory.js";
@@ -73,47 +74,82 @@ async function fetchNews() {
   return combined.slice(0, 14);
 }
 
+// ============ NEW: Treasury Yield & DXY ============
+async function fetchTreasuryYield() {
+  const apiKey = process.env.ALPHA_VANTAGE_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = `https://www.alphavantage.co/query?function=TREASURY_YIELD&interval=monthly&maturity=10year&apikey=${apiKey}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (data.data && data.data.length > 0) {
+      return parseFloat(data.data[0].value);
+    }
+    return null;
+  } catch (e) { return null; }
+}
+
+async function fetchDXY() {
+  const apiKey = process.env.ALPHA_VANTAGE_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = `https://www.alphavantage.co/query?function=DXY&apikey=${apiKey}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    const price = data['Global Quote']?.['05. price'];
+    return price ? parseFloat(price) : null;
+  } catch (e) { return null; }
+}
+
 // ==================== SYSTEM PROMPTS ====================
 
 const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD)، خبير بتقارير COT الصادرة عن CFTC وبالتحليل الفني الكلاسيكي والرياضيات المالية.
-البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، ومؤشرات فنية كلاسيكية + نماذج Black-Scholes احتمالية) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، مؤشرات فنية كلاسيكية، نماذج Black-Scholes احتمالية، بالإضافة إلى عائد السندات الأمريكية لأجل 10 سنوات ومؤشر الدولار) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
 
-منهجية التحليل الإلزامية — حلل 5 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
+منهجية التحليل الإلزامية — حلل 6 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
 1. **COT (تمركز المؤسسات):** هل هناك تمركز مفرط لدى المضاربين غير التجاريين؟ هل التغير الأسبوعي يدعم استمرار الاتجاه أم يشير لاحتمال انعكاس؟
 2. **الأخبار والسياسة النقدية:** ماذا تعني العناوين المتاحة تحديداً (اذكرها) بالنسبة لتوقعات الفائدة وقوة الدولار؟
 3. **التقويم الاقتصادي القادم:** ما هي أقرب الأحداث عالية الأهمية القادمة، ومتى، وما تأثيرها المحتمل؟
 4. **التحليل الفني الكلاسيكي:** ماذا تقول المؤشرات المحسوبة (RSI، MACD، المتوسطات المتحركة، نطاقات بولينجر) عن الزخم الحالي؟ هل هناك تشبع شرائي/بيعي، تقاطعات، أو اختراق نطاقات؟
-5. **Black-Scholes والاحتماليات:** بناءً على التقلب التاريخي المحسوب من البيانات الفعلية، ما هي الحركة المتوقعة هذا الأسبوع؟ ما نسبة احتمالية بقاء السعر ضمن نطاق بولينجر؟ هل السعر الحالي أقرب لحدود النطاق المتوقع أم في المنتصف؟ كيف تُستخدم هذه الأرقام لتحديد نقاط دخول/خروج أكثر دقة؟
+5. **Black-Scholes والاحتماليات:** بناءً على التقلب التاريخي المحسوب من البيانات الفعلية، ما هي الحركة المتوقعة هذا الأسبوع؟ ما نسبة احتمالية بقاء السعر ضمن نطاق بولينجر؟ كيف تُستخدم هذه الأرقام لتحديد نقاط دخول/خروج أكثر دقة؟
+6. **السندات والدولار:** كيف تؤثر عوائد السندات الأمريكية (10 سنوات) ومؤشر الدولار على الذهب؟ هل العلاقة العكسية قوية حالياً؟ هل التغيرات الأخيرة في العوائد أو الدولار تدعم صعود أو هبوط الذهب؟ اذكر الأرقام الحالية بوضوح.
 
-بعد تحليل الأربعة، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور الخمسة متفقة مع بعضها أم متعارضة؟ أي محور له الوزن الأكبر بقرارك ولماذا؟
+بعد تحليل المحاور الستة، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور متفقَة مع بعضها أم متعارضة؟ أي محور له الوزن الأكبر بقرارك ولماذا؟
 
-**الخطوة السادسة — الدمج والسيناريوهات المستقبلية:** بعد تحليل المحاور الخمسة، ادمجهم بتحليل موحّد يشرح الوضع الحالي، وابنِ سيناريوهين مستقبليين واضحين (صعودي وهبوطي) بشرط أن يذكر كل سيناريو: **ما الذي يجب أن يحدث** (مثلاً كسر مستوى معين، أو نتيجة معينة لحدث بالتقويم، أو تأكيد فني) **حتى يتحقق هذا السيناريو**. أضف أيضاً "مستوى إبطال" (invalidation level) — نقطة سعرية لو انكسرت، يصبح التوقع الحالي غير صالح ويجب إعادة التقييم.
+**الخطوة السابعة — الدمج والسيناريوهات المستقبلية:** بعد تحليل المحاور الستة، ادمجهم بتحليل موحّد يشرح الوضع الحالي، وابنِ سيناريوهين مستقبليين واضحين (صعودي وهبوطي) بشرط أن يذكر كل سيناريو: **ما الذي يجب أن يحدث** (مثلاً كسر مستوى معين، أو نتيجة معينة لحدث بالتقويم، أو تأكيد فني) **حتى يتحقق هذا السيناريو**. أضف أيضاً "مستوى إبطال" (invalidation level) — نقطة سعرية لو انكسرت، يصبح التوقع الحالي غير صالح ويجب إعادة التقييم.
 
-**خطوة سابعة — توصية Black-Scholes العملية:** بناءً على النطاق المتوقع (Expected Range) والاحتماليات، اكتب توصية عملية مختصرة: هل السعر الحالي يستحق الشراء/البيع الآن، أم الانتظار حتى كسر مستوى معين؟ اذكر السبب الرياضي.
+**الخطوة الثامنة — تحليل الفريمات للمتداول اليومي:** بناءً على السعر اللحظي والمؤشرات الفنية المتاحة (حتى لو كانت بيانات يومية فقط، حاول استنتاج الاتجاه على فريمات 1 ساعة و4 ساعات ويومي)، اكتب تحليلاً موجزاً للمتداول اليومي يحدد:
+- الاتجاه المتوقع خلال اليوم (صاعد، هابط، جانبي).
+- أقرب مستويات دعم ومقاومة قصيرة المدى (نقطة أو اثنتين لكل منهما).
+- هل السعر الحالي مناسب للشراء أم البيع أم الانتظار؟ مع سبب مختصر.
+- حدد مستوى إبطال يومي (سعر لو انكسر يغير الرؤية اليومية).
 
-مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية، لا داعي للاختصار المبالغ فيه):
-- summary: 4 إلى 5 جمل، تلخص التوافق/التعارض بين المحاور الخمسة والسبب الرئيسي وراء القرار النهائي.
-- cot_reading: 2 إلى 3 جمل تشرح تحديداً أرقام المراكز ودلالتها.
-- news_reading: 2 إلى 3 جمل تربط عناوين محددة بتأثيرها المتوقع على الذهب. تجاهل تماماً أي عنوان لا علاقة له بالاقتصاد الكلي أو الذهب أو الدولار أو الفائدة.
-- calendar_reading: 1 إلى 2 جملة عن أقرب حدث/أحداث عالية الأهمية القادمة وتوقيتها المحتمل.
-- technical_reading: 2 إلى 3 جمل تفسر تحديداً قراءات RSI وMACD والمتوسطات المتحركة وموقع السعر ضمن نطاقات بولينجر.
-- black_scholes_reading: 2 إلى 3 جمل تشرح التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — وكيف تدعم أو تناقض التحليل الفني.
-- bs_recommendation: جملة واحدة عملية (حتى 25 كلمة) — توصية شراء/بيع/انتظار بناءً على النطاق المتوقع والاحتماليات.
-- current_situation: 3 إلى 4 جمل تصف الوضع العام الحالي للذهب بلغة مباشرة وسهلة، كخلاصة مدمجة لغير المتخصصين.
-- scenarios.bullish: جملتان إلى 3 — الشرط اللازم لتحقق السيناريو الصعودي والمستوى المرتبط فيه.
-- scenarios.bearish: جملتان إلى 3 — الشرط اللازم لتحقق السيناريو الهبوطي والمستوى المرتبط فيه.
-- invalidation_level: رقم أو نطاق قصير فقط (مثل "3290" أو "3280-3290") مع أقل من 8 كلمات توضيحية.
-- key_drivers: 3 إلى 4 عناصر، كل عنصر جملة كاملة واضحة (حتى 18 كلمة).
-- key_levels: عنصران كحد أقصى بكل مصفوفة (support/resistance)، كل عنصر رقم أو نطاق قصير فقط مثل "3320-3330"، محسوبة بالنسبة للسعر الحالي المُعطى فعلياً (وبالاستفادة من مستويات SMA/Bollinger وExpected Range إن كانت منطقية كدعم/مقاومة).
-- risks: 2 إلى 3 عناصر، كل عنصر جملة واضحة (حتى 18 كلمة).
+**توصية Black-Scholes العملية:** بناءً على النطاق المتوقع (Expected Range) والاحتماليات، اكتب توصية عملية مختصرة: هل السعر الحالي يستحق الشراء/البيع الآن، أم الانتظار حتى كسر مستوى معين؟ اذكر السبب الرياضي.
 
-إذا كانت أي بيانات فارغة أو غير متاحة (تعذر الجلب/الحساب)، اذكر ذلك بوضوح ضمن الحقل النصي المناسب بدل تجاهل الأمر أو اختلاق بيانات.
+مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية):
+- summary: 4 إلى 5 جمل.
+- cot_reading: 2-3 جمل.
+- news_reading: 2-3 جمل.
+- calendar_reading: 1-2 جملة.
+- technical_reading: 2-3 جمل.
+- black_scholes_reading: 2-3 جمل.
+- bs_recommendation: جملة واحدة.
+- current_situation: 3-4 جمل.
+- scenarios.bullish: 2-3 جمل.
+- scenarios.bearish: 2-3 جمل.
+- invalidation_level: رقم أو نطاق قصير.
+- key_drivers: 3-4 عناصر.
+- key_levels: دعم ومقاومة (رقم أو نطاق).
+- risks: 2-3 عناصر.
+- daily_outlook: 3-4 جمل تحليلية للمتداول اليومي مع ذكر الاتجاه ومستويات الدعم/المقاومة القريبة.
+- treasury_yield_value: رقم عشري (مثل 4.25) أو null.
+- dxy_value: رقم عشري (مثل 105.3) أو null.
 
-أجب حصراً بصيغة JSON صالحة ومكتملة (تأكد من إغلاق كل الأقواس والاقتباسات) بدون أي نص إضافي قبله أو بعده وبدون Markdown، بالمفاتيح التالية بالضبط:
+أجب حصراً بصيغة JSON صالحة ومكتملة بدون أي نص إضافي، بالمفاتيح التالية:
 {
   "trend": "صعودي" | "هبوطي" | "محايد",
-  "score": رقم من -100 إلى 100,
-  "confidence": رقم من 0 إلى 100,
+  "score": رقم,
+  "confidence": رقم,
   "summary": "...",
   "cot_reading": "...",
   "news_reading": "...",
@@ -126,49 +162,59 @@ const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص با�
   "invalidation_level": "...",
   "key_drivers": ["...", "...", "..."],
   "key_levels": {"support": ["..."], "resistance": ["..."]},
-  "risks": ["...", "..."]
-}
-الأولوية القصوى هي إرجاع JSON صالح ومكتمل حتى لو كان مختصراً جداً.`;
+  "risks": ["...", "..."],
+  "treasury_yield_value": رقم أو null,
+  "dxy_value": رقم أو null,
+  "daily_outlook": "..."
+}`;
 
 const SYSTEM_PROMPT_EN = `You are a professional market analyst specializing in Gold (XAUUSD), an expert in CFTC COT reports, classical technical analysis, and financial mathematics.
-The data provided below was fetched/computed automatically moments ago from live sources and real mathematical calculations (live price, official CFTC COT data, recent news headlines, weekly economic calendar, classical technical indicators + Black-Scholes probability models) — treat it as real and current data, do not question its freshness.
+The data provided below was fetched/computed automatically moments ago from live sources and real mathematical calculations (live price, official CFTC COT data, recent news headlines, weekly economic calendar, classical technical indicators, Black-Scholes probability models, plus US 10-year Treasury yield and Dollar Index) — treat it as real and current data, do not question its freshness.
 
-Mandatory Analysis Methodology — analyze 5 separate pillars first, then synthesize into a final conclusion:
+Mandatory Analysis Methodology — analyze 6 separate pillars first, then synthesize into a final conclusion:
 1. **COT (Institutional Positioning):** Is there excessive concentration among non-commercial speculators? Does the weekly change support trend continuation or suggest a reversal?
 2. **News & Monetary Policy:** What do the available headlines specifically mean (mention them) for interest rate expectations and dollar strength?
 3. **Upcoming Economic Calendar:** What are the nearest high-importance events coming up, when, and what is their likely impact?
 4. **Classical Technical Analysis:** What do the computed indicators (RSI, MACD, Moving Averages, Bollinger Bands) say about current momentum? Any overbought/oversold conditions, crossovers, or band breakouts?
-5. **Black-Scholes & Probabilities:** Based on the historically computed volatility from actual data, what is the expected move this week? What is the probability of price staying within Bollinger Bands? Is current price closer to the edges of the expected range or in the middle? How can these numbers be used to determine more precise entry/exit points?
+5. **Black-Scholes & Probabilities:** Based on the historically computed volatility from actual data, what is the expected move this week? What is the probability of price staying within Bollinger Bands? How can these numbers be used to determine more precise entry/exit points?
+6. **Treasury & Dollar:** How do US Treasury yields (10-year) and the Dollar Index affect gold? Is the inverse relationship strong currently? Do recent changes in yields or the dollar support a rise or fall in gold? Quote the current numbers clearly.
 
-After analyzing all five, write a final summary that clearly states: Are the five pillars aligned or conflicting? Which pillar carries the most weight in your decision and why?
+After analyzing all six, write a final summary that clearly states: Are the pillars aligned or conflicting? Which pillar carries the most weight in your decision and why?
 
-**Step Six — Synthesis & Future Scenarios:** After analyzing the five pillars, merge them into a unified analysis explaining the current situation, and build two clear future scenarios (bullish and bearish) with the condition that each scenario must mention: **what needs to happen** (e.g., break a specific level, a certain calendar event outcome, or technical confirmation) **for this scenario to materialize**. Also add an "invalidation level" — a price point that if broken, makes the current forecast invalid and requires re-evaluation.
+**Step Seven — Synthesis & Future Scenarios:** After analyzing the six pillars, merge them into a unified analysis explaining the current situation, and build two clear future scenarios (bullish and bearish) with the condition that each scenario must mention: **what needs to happen** (e.g., break a specific level, a certain calendar event outcome, or technical confirmation) **for this scenario to materialize**. Also add an "invalidation level" — a price point that if broken, makes the current forecast invalid and requires re-evaluation.
 
-**Step Seven — Black-Scholes Practical Recommendation:** Based on the Expected Range and probabilities, write a brief practical recommendation: Is the current price worth buying/selling now, or waiting for a break of a specific level? Mention the mathematical reason.
+**Step Eight — Intraday Trader Outlook:** Based on the current price and available technical indicators (even if only daily data, try to infer direction on 1h, 4h, and daily), write a brief outlook for the intraday trader that specifies:
+- The expected direction for the day (up, down, sideways).
+- Nearest short-term support and resistance levels (one or two each).
+- Whether the current price is suitable for buying, selling, or waiting, with a brief reason.
+- A daily invalidation level (price that if broken changes the daily view).
 
-Very important: Adhere to the following limits for each text field (you have enough space, no need for excessive brevity):
-- summary: 4 to 5 sentences, summarizing alignment/conflict between the five pillars and the main reason behind the final decision.
-- cot_reading: 2 to 3 sentences explaining specifically the position numbers and their meaning.
-- news_reading: 2 to 3 sentences connecting specific headlines to their expected impact on gold. Completely ignore any headline unrelated to macroeconomics, gold, dollar, or interest rates.
-- calendar_reading: 1 to 2 sentences about the nearest high-importance upcoming event(s) and their likely timing.
-- technical_reading: 2 to 3 sentences specifically interpreting RSI, MACD, moving averages, and price position within Bollinger Bands.
-- black_scholes_reading: 2 to 3 sentences explaining historical volatility, expected move, and the probability range — and how they support or contradict the technical analysis.
-- bs_recommendation: One practical sentence (up to 25 words) — buy/sell/wait recommendation based on expected range and probabilities.
-- current_situation: 3 to 4 sentences describing the current general gold situation in direct, easy language, as an integrated summary for non-specialists.
-- scenarios.bullish: 2 to 3 sentences — the necessary condition for the bullish scenario and the related level.
-- scenarios.bearish: 2 to 3 sentences — the necessary condition for the bearish scenario and the related level.
-- invalidation_level: Just a number or short range (like "3290" or "3280-3290") with less than 8 explanatory words.
-- key_drivers: 3 to 4 items, each a complete clear sentence (up to 18 words).
-- key_levels: Maximum two items per array (support/resistance), each just a number or short range like "3320-3330", computed relative to the actual current price (using SMA/Bollinger/Expected Range levels if they make sense as support/resistance).
-- risks: 2 to 3 items, each a clear sentence (up to 18 words).
+**Black-Scholes Practical Recommendation:** Based on the Expected Range and probabilities, write a brief practical recommendation: Is the current price worth buying/selling now, or waiting for a break of a specific level? Mention the mathematical reason.
 
-If any data is empty or unavailable (fetch/calculation failed), mention that clearly in the appropriate text field instead of ignoring it or making up data.
+Very important: Adhere to the following limits for each text field:
+- summary: 4 to 5 sentences.
+- cot_reading: 2-3 sentences.
+- news_reading: 2-3 sentences.
+- calendar_reading: 1-2 sentences.
+- technical_reading: 2-3 sentences.
+- black_scholes_reading: 2-3 sentences.
+- bs_recommendation: one sentence.
+- current_situation: 3-4 sentences.
+- scenarios.bullish: 2-3 sentences.
+- scenarios.bearish: 2-3 sentences.
+- invalidation_level: just a number or short range.
+- key_drivers: 3-4 items.
+- key_levels: support and resistance (number or range).
+- risks: 2-3 items.
+- daily_outlook: 3-4 sentences summarizing intraday direction and key levels.
+- treasury_yield_value: decimal number (e.g. 4.25) or null.
+- dxy_value: decimal number (e.g. 105.3) or null.
 
-Respond ONLY with valid and complete JSON (ensure all brackets and quotes are closed) without any additional text before or after and without Markdown, using exactly these keys:
+Respond ONLY with valid and complete JSON without any additional text, with exactly these keys:
 {
   "trend": "Bullish" | "Bearish" | "Neutral",
-  "score": number from -100 to 100,
-  "confidence": number from 0 to 100,
+  "score": number,
+  "confidence": number,
   "summary": "...",
   "cot_reading": "...",
   "news_reading": "...",
@@ -181,11 +227,13 @@ Respond ONLY with valid and complete JSON (ensure all brackets and quotes are cl
   "invalidation_level": "...",
   "key_drivers": ["...", "...", "..."],
   "key_levels": {"support": ["..."], "resistance": ["..."]},
-  "risks": ["...", "..."]
-}
-Top priority is returning valid and complete JSON even if very brief.`;
+  "risks": ["...", "..."],
+  "treasury_yield_value": number or null,
+  "dxy_value": number or null,
+  "daily_outlook": "..."
+}`;
 
-function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, lang) {
+function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy, lang) {
   const isAr = lang === 'ar';
 
   const bsData = technical?.historicalVolatility
@@ -213,6 +261,16 @@ function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, la
     : (isAr 
       ? "**بيانات Black-Scholes:** تعذر حساب التقلب التاريخي (بيانات غير كافية)."
       : "**Black-Scholes Data:** Failed to compute historical volatility (insufficient data).");
+
+  const macroData = isAr
+    ? `**بيانات السندات الأمريكية ومؤشر الدولار (حالية):**
+- عائد سندات الخزانة لأجل 10 سنوات: ${treasuryYield != null ? treasuryYield.toFixed(2) + '%' : 'غير متوفر'}
+- مؤشر الدولار (DXY): ${dxy != null ? dxy.toFixed(2) : 'غير متوفر'}
+`
+    : `**US Treasury Yield and Dollar Index (current):**
+- 10-Year Treasury Yield: ${treasuryYield != null ? treasuryYield.toFixed(2) + '%' : 'N/A'}
+- US Dollar Index (DXY): ${dxy != null ? dxy.toFixed(2) : 'N/A'}
+`;
 
   if (isAr) {
     return `السعر الحالي الفعلي للذهب XAUUSD الآن: ${priceInfo ? `${priceInfo.price} دولار (آخر تحديث: ${priceInfo.updatedAtReadable})` : "تعذر جلب السعر الآن من المصدر الحي."}
@@ -242,9 +300,11 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
 - نطاقات بولينجر (20، 2 انحراف معياري): علوي = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}، أوسط = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}، سفلي = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "تعذر حساب المؤشرات الفنية حالياً (بيانات تاريخية غير متوفرة حالياً)."}
 """
 
+${macroData}
+
 ${bsData}
 
-حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
+حلل الوضع وأعطني توقعك الأسبوعي والتوجيه اليومي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
   } else {
     return `Current live price of Gold XAUUSD right now: ${priceInfo ? `$${priceInfo.price} (Last update: ${priceInfo.updatedAtReadable})` : "Failed to fetch live price from source."}
 
@@ -273,9 +333,11 @@ ${technical ? `- Last daily close price used in calculations: ${technical.lastCl
 - Bollinger Bands (20, 2 std dev): Upper = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}, Middle = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}, Lower = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "Failed to compute technical indicators currently (historical data not available)."}
 """
 
+${macroData}
+
 ${bsData}
 
-Analyze the situation and give me your weekly forecast adhering ONLY to the required JSON format.`;
+Analyze the situation and give me your weekly forecast and daily intraday outlook adhering ONLY to the required JSON format.`;
   }
 }
 
@@ -305,21 +367,22 @@ export default async function handler(req, res) {
     });
   }
 
-  // Detect language preference
   const lang = req.body?.lang || req.headers["x-preferred-lang"] || "ar";
   const isAr = lang === 'ar';
 
   try {
-    const [priceInfo, cotRows, headlines, calendar, technical] = await Promise.all([
+    const [priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy] = await Promise.all([
       fetchGoldPrice(),
       fetchCotRows(),
       fetchNews(),
       fetchEconomicCalendar(),
       getTechnicalSnapshot(),
+      fetchTreasuryYield(),
+      fetchDXY(),
     ]);
 
     const sys = isAr ? SYSTEM_PROMPT_AR : SYSTEM_PROMPT_EN;
-    const userMsg = buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, lang);
+    const userMsg = buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy, lang);
 
     const model = "gemini-2.5-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -354,7 +417,7 @@ export default async function handler(req, res) {
     if (finishReason === "MAX_TOKENS") {
       return res.status(200).json({
         content: [{ type: "text", text }],
-        _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
+        _sources: { price: priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy },
         _usage: usage,
         _truncated: true,
       });
@@ -362,7 +425,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       content: [{ type: "text", text }],
-      _sources: { price: priceInfo, cotRows, headlines, calendar, technical },
+      _sources: { price: priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy },
       _usage: usage,
     });
   } catch (err) {
