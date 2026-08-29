@@ -399,6 +399,44 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
   margin-top: 12px;
 }
 
+/* Zoom Out Card */
+.zoom-card {
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-top: 16px;
+  border-right: 3px solid var(--gold-dim);
+}
+.zoom-card .zoom-title {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.zoom-card .zoom-body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+.zoom-card .zoom-body b {
+  color: var(--gold);
+}
+
+/* SL/TP Row */
+.sltp-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+.sltp-row .sl { color: var(--bear); }
+.sltp-row .tp { color: var(--bull); }
+.sltp-row .mono { font-family: var(--font-mono); font-weight: 600; }
+
 /* History */
 .hist-item {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -417,12 +455,28 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
 /* Footer */
 footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--text-dim); padding: 0 16px; }
 
+/* Feedback stats */
+.feedback-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.feedback-stats span {
+  background: var(--bg-elevated);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .hero h1 { font-size: 26px; }
   .trend-text { font-size: 20px; }
   .top-bar-inner { padding: 8px 12px; }
   .ctrl-btn { padding: 6px 10px; font-size: 12px; }
+  .feedback-stats { gap: 10px; }
 }
 </style>
 <base target="_blank">
@@ -521,14 +575,14 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     </div>
     <div class="feature-card">
       <div class="feature-icon">⏰</div>
-      <div class="feature-title">نظرة يومية</div>
-      <div class="feature-desc">تحليل متعدد الفريمات (1س، 4س، يومي) مع مستويات دعم ومقاومة للمتداول اليومي.</div>
+      <div class="feature-title">نظرة يومية + فريمات</div>
+      <div class="feature-desc">تحليل متعدد الفريمات (1س، 4س، يومي) مع مستويات دعم ومقاومة وتوصيات محددة لوقف الخسارة وجني الأرباح.</div>
     </div>
   </div>
 
   <div class="about-section">
     <h2 data-i18n="aboutTitle">ليش هالموقع؟</h2>
-    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين.</p>
+    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين مع توصيات دقيقة لوقف الخسارة وجني الأرباح.</p>
   </div>
 
   <div class="landing-footer">
@@ -614,7 +668,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
   <!-- Auto Analyze -->
   <div class="auto-card">
     <div class="auto-title" data-i18n="autoTitle">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار، ويحلل كل شي بضغطة زر.</div>
+    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار + فريمات 1 ساعة و4 ساعات، ويحلل كل شي بضغطة زر.</div>
     <button class="btn-primary" id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel" data-i18n="btnAnalyze">حلّل الآن تلقائياً</span>
@@ -655,6 +709,19 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
         <div class="split"><div class="split-title mono">📅 التقويم</div><div class="split-body" id="resCalendar"></div></div>
         <div class="split"><div class="split-title mono">📈 الفني</div><div class="split-body" id="resTechnical"></div></div>
       </div>
+      
+      <!-- تحليل المشاعر -->
+      <div id="sentimentWrap" style="margin-top:16px; display:none;">
+        <div class="split">
+          <div class="split-title mono">🧠 تحليل المشاعر الفورية</div>
+          <div class="split-body" id="resSentiment"></div>
+        </div>
+      </div>
+
+      <!-- Zoom Out (السياق الأوسع) -->
+      <div id="zoomWrap" style="margin-top:16px; display:none;"></div>
+
+      <!-- السيناريوهات -->
       <div id="scenariosWrap" style="margin-top:16px; display:none;" class="grid2">
         <div class="scenario-box scenario-bull"><div class="scenario-title" style="color:var(--bull);">📈 صعودي</div><div id="resScenarioBull" style="font-size:13.5px; line-height:1.8;"></div></div>
         <div class="scenario-box scenario-bear"><div class="scenario-title" style="color:var(--bear);">📉 هبوطي</div><div id="resScenarioBear" style="font-size:13.5px; line-height:1.8;"></div></div>
@@ -690,6 +757,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <span id="histArrow">▾</span>
   </button>
   <div id="histBody" style="display:none; margin-top:10px;">
+    <div class="feedback-stats" id="feedbackStats"></div>
     <div class="stats-bar" id="statsBar"></div>
     <div id="histList"></div>
   </div>
@@ -721,7 +789,7 @@ const i18n = {
     featBS: "Black-Scholes احتمالي",
     featBSDesc: "التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.",
     aboutTitle: "ليش هالموقع؟",
-    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين.",
+    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين مع توصيات دقيقة لوقف الخسارة وجني الأرباح.",
     disclaimer: "هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.",
     authLogin: "تسجيل الدخول",
     authSignup: "إنشاء حساب جديد",
@@ -746,28 +814,13 @@ const i18n = {
     qsRange: "النطاق المتوقع",
     qs68Conf: "ثقة 68%",
     autoTitle: "⚡ تحليل تلقائي كامل",
-    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار، ويحلل كل شي بضغطة زر.",
+    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار + فريمات 1 ساعة و4 ساعات، ويحلل كل شي بضغطة زر.",
     btnAnalyze: "حلّل الآن تلقائياً",
     readCot: "قراءة COT",
     readNews: "قراءة الأخبار",
     readCalendar: "التقويم الاقتصادي القادم",
     readTechnical: "التحليل الفني الكلاسيكي",
     bsTitle: "Black-Scholes — التقلب والاحتماليات",
-    labelSpot: "السعر الحالي (Spot)",
-    labelStrike: "سعر التنفيذ (Strike)",
-    labelDays: "الأيام حتى الاستحقاق",
-    labelVol: "التقلب السنوي (%)",
-    labelRate: "معدل الفائدة الخالي من المخاطر (%)",
-    labelType: "نوع الخيار",
-    optCall: "شراء (Call)",
-    optPut: "بيع (Put)",
-    btnCalc: "احسب",
-    probTitle: "حاسبة الاحتمالية",
-    labelTarget: "السعر المستهدف",
-    labelDaysProb: "الفترة (أيام)",
-    btnCalcProb: "احسب الاحتمالية",
-    probBelow: "أقل",
-    probAbove: "أعلى",
     keyDriversTitle: "أهم المحركات",
     supportLevels: "مستويات الدعم",
     resistanceLevels: "مستويات المقاومة",
@@ -801,6 +854,8 @@ const i18n = {
     macroYield: "عائد السندات 10 سنوات",
     macroDXY: "مؤشر الدولار (DXY)",
     dailyOutlookTitle: "📊 نظرة المتداول اليومي",
+    bullishLabel: "صعودي",
+    bearishLabel: "هبوطي",
   },
   en: {
     pageTitle: "Gold Analysis Desk — COT & News Intelligence",
@@ -821,7 +876,7 @@ const i18n = {
     featBS: "Black-Scholes Probability",
     featBSDesc: "Historical volatility, expected move, and probability range — for a buy/sell decision backed by math.",
     aboutTitle: "Why This Platform?",
-    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (6 separate pillars), and gives you clear future scenarios and daily trader outlook.",
+    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (6 separate pillars), and gives you clear future scenarios and daily trader outlook with precise stop-loss and take-profit recommendations.",
     disclaimer: "This platform is an educational analytical tool powered by AI, not investment advice or licensed financial consulting. The final decision and responsibility always rest with you.",
     authLogin: "Sign In",
     authSignup: "Create Account",
@@ -846,28 +901,13 @@ const i18n = {
     qsRange: "Expected Range",
     qs68Conf: "68% Confidence",
     autoTitle: "⚡ Full Auto Analysis",
-    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models + treasury & DXY data, and analyzes everything with one click.",
+    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models + treasury & DXY data + 1H & 4H timeframes, and analyzes everything with one click.",
     btnAnalyze: "Analyze Now",
     readCot: "COT Reading",
     readNews: "News Reading",
     readCalendar: "Upcoming Economic Calendar",
     readTechnical: "Classical Technical Analysis",
     bsTitle: "Black-Scholes — Volatility & Probabilities",
-    labelSpot: "Current Price (Spot)",
-    labelStrike: "Strike Price",
-    labelDays: "Days to Expiry",
-    labelVol: "Annual Volatility (%)",
-    labelRate: "Risk-Free Rate (%)",
-    labelType: "Option Type",
-    optCall: "Call",
-    optPut: "Put",
-    btnCalc: "Calculate",
-    probTitle: "Probability Calculator",
-    labelTarget: "Target Price",
-    labelDaysProb: "Period (Days)",
-    btnCalcProb: "Calculate Probability",
-    probBelow: "Below",
-    probAbove: "Above",
     keyDriversTitle: "Key Drivers",
     supportLevels: "Support Levels",
     resistanceLevels: "Resistance Levels",
@@ -901,6 +941,8 @@ const i18n = {
     macroYield: "10-Year Treasury Yield",
     macroDXY: "Dollar Index (DXY)",
     dailyOutlookTitle: "📊 Daily Trader Outlook",
+    bullishLabel: "Bullish",
+    bearishLabel: "Bearish",
   }
 };
 
@@ -1156,7 +1198,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
-  const { price, cotRows, headlines, calendar, technical, treasuryYield, dxy } = sources;
+  const { price, cotRows, headlines, calendar, technical, treasuryYield, dxy, intraday1h, intraday4h } = sources;
   let html = "";
   html += `<div class="src-line"><b>${currentLang==="ar"?"السعر المستخدم:":"Price Used:"}</b> ${price ? price.price + " $ (" + (currentLang==="ar"?"تحديث:":"Updated:") + " " + price.updatedAtReadable + ")" : (currentLang==="ar"?"تعذر الجلب":"Failed to fetch")}</div>`;
   html += `<div class="src-line"><b>COT:</b> ${cotRows ? cotRows.length : 0} ${currentLang==="ar"?"صفوف":"rows"}</div>`;
@@ -1167,9 +1209,23 @@ function renderSources(sources) {
     if (technical.historicalVolatility != null) {
       html += `<div class="src-line"><b>BS:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · EM7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range [${technical.expectedRange7d?.lower.toFixed(0) ?? "-"}-${technical.expectedRange7d?.upper.toFixed(0) ?? "-"}]</div>`;
     }
+    // عرض ATR والبيفوت
+    if (technical.atr != null) {
+      html += `<div class="src-line"><b>📏 ATR:</b> $${technical.atr.toFixed(2)}</div>`;
+    }
+    if (technical.pivot) {
+      html += `<div class="src-line"><b>📍 البيفوت:</b> Pivot $${technical.pivot.pivot?.toFixed(2) ?? "-"} · R1 $${technical.pivot.r1?.toFixed(2) ?? "-"} · S1 $${technical.pivot.s1?.toFixed(2) ?? "-"}</div>`;
+    }
   }
   if (treasuryYield != null || dxy != null) {
     html += `<div class="src-line"><b>${currentLang==="ar"?"السندات والدولار:":"Treasury & DXY:"}</b> 10Y ${treasuryYield != null ? treasuryYield.toFixed(2)+'%' : 'N/A'} · DXY ${dxy != null ? dxy.toFixed(2) : 'N/A'}</div>`;
+  }
+  // عرض بيانات الفريمات
+  if (intraday1h || intraday4h) {
+    html += `<div class="src-line"><b>⏰ الفريمات:</b>`;
+    if (intraday1h) html += ` 1H: ${intraday1h.close} (RSI ${intraday1h.rsi?.toFixed(1) ?? "-"})`;
+    if (intraday4h) html += ` · 4H: ${intraday4h.close} (RSI ${intraday4h.rsi?.toFixed(1) ?? "-"})`;
+    html += `</div>`;
   }
   if (headlines && headlines.length) {
     html += `<div class="src-line" style="margin-top:6px;"><b>${currentLang==="ar"?"أهم العناوين:":"Top Headlines:"}</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
@@ -1243,6 +1299,11 @@ async function autoAnalyze() {
         treasury_yield_value: data._sources?.treasuryYield ?? null,
         dxy_value: data._sources?.dxy ?? null,
         daily_outlook: "",
+        weekly_context: "",
+        monthly_context: "",
+        sentiment_analysis: "",
+        stop_loss_suggestion: "",
+        take_profit_suggestion: "",
       };
     }
 
@@ -1292,15 +1353,48 @@ function showResult(r, sources) {
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
   else { csEl.style.display = "none"; }
 
+  // ========== daily_outlook ==========
   const dailyEl = document.getElementById("resDailyOutlook");
   if (r.daily_outlook) {
-    dailyEl.innerHTML = `<span style="font-weight:600; color:var(--gold);">${t("dailyOutlookTitle")}</span><br>${r.daily_outlook}`;
+    let sltpHtml = "";
+    if (r.stop_loss_suggestion || r.take_profit_suggestion) {
+      sltpHtml = `<div class="sltp-row">
+        ${r.stop_loss_suggestion ? `<span>🛑 <b>وقف الخسارة:</b> <span class="mono sl">${r.stop_loss_suggestion}</span></span>` : ''}
+        ${r.take_profit_suggestion ? `<span>🎯 <b>جني الأرباح:</b> <span class="mono tp">${r.take_profit_suggestion}</span></span>` : ''}
+      </div>`;
+    }
+    dailyEl.innerHTML = `<span style="font-weight:600; color:var(--gold);">${t("dailyOutlookTitle")}</span><br>${r.daily_outlook}${sltpHtml}`;
     dailyEl.style.display = "block";
   } else {
     dailyEl.style.display = "none";
   }
 
-  // Macro Card
+  // ========== Zoom Out (السياق الأوسع) ==========
+  const zoomWrap = document.getElementById("zoomWrap");
+  if (r.weekly_context || r.monthly_context) {
+    let zoomHtml = `<div class="zoom-card">
+      <div class="zoom-title">🔍 السياق الأوسع (Zoom Out)</div>
+      <div class="zoom-body">
+        ${r.weekly_context ? `<div><b>📅 أسبوعي:</b> ${r.weekly_context}</div>` : ''}
+        ${r.monthly_context ? `<div style="margin-top:6px;"><b>📆 شهري:</b> ${r.monthly_context}</div>` : ''}
+      </div>
+    </div>`;
+    zoomWrap.innerHTML = zoomHtml;
+    zoomWrap.style.display = "block";
+  } else {
+    zoomWrap.style.display = "none";
+  }
+
+  // ========== تحليل المشاعر ==========
+  const sentimentWrap = document.getElementById("sentimentWrap");
+  if (r.sentiment_analysis) {
+    document.getElementById("resSentiment").textContent = r.sentiment_analysis;
+    sentimentWrap.style.display = "block";
+  } else {
+    sentimentWrap.style.display = "none";
+  }
+
+  // ========== Macro Card ==========
   const macroCard = document.getElementById("macroCard");
   if (r.treasury_yield_value != null || r.dxy_value != null) {
     macroCard.style.display = "block";
@@ -1321,7 +1415,7 @@ function showResult(r, sources) {
     macroCard.style.display = "none";
   }
 
-  // Black-Scholes Card (Tab 2)
+  // ========== Black-Scholes ==========
   const bsCard = document.getElementById("bsCard");
   const bsSources = sources?.technical;
   if (r.black_scholes_reading || r.bs_recommendation || (bsSources && bsSources.historicalVolatility != null)) {
@@ -1365,7 +1459,7 @@ function showResult(r, sources) {
     bsCard.style.display = "none";
   }
 
-  // Scenarios
+  // ========== Scenarios ==========
   const scWrap = document.getElementById("scenariosWrap");
   if (r.scenarios && (r.scenarios.bullish || r.scenarios.bearish)) {
     document.getElementById("resScenarioBull").textContent = r.scenarios.bullish || "—";
@@ -1373,7 +1467,7 @@ function showResult(r, sources) {
     scWrap.style.display = "grid";
   } else scWrap.style.display = "none";
 
-  // Invalidation
+  // ========== Invalidation ==========
   const invEl = document.getElementById("resInvalidation");
   if (r.invalidation_level) {
     invEl.innerHTML = `${t("invalidationPrefix")} <b>${r.invalidation_level}</b> ${t("invalidationSuffix")}`;
@@ -1382,13 +1476,13 @@ function showResult(r, sources) {
 
   drawGauge(r.score, r.trend);
 
-  // Drivers
+  // ========== Drivers ==========
   const driversList = document.getElementById("driversList");
   driversList.innerHTML = "";
   (r.key_drivers || []).forEach(d => { const li = document.createElement("li"); li.textContent = d; driversList.appendChild(li); });
   document.getElementById("driversWrap").style.display = (r.key_drivers || []).length ? "block" : "none";
 
-  // Levels
+  // ========== Levels ==========
   const sup = document.getElementById("supportChips"); sup.innerHTML = "";
   (r.key_levels?.support || []).forEach(s => { const span = document.createElement("span"); span.className = "chip"; span.textContent = s; sup.appendChild(span); });
   const resEl = document.getElementById("resistanceChips"); resEl.innerHTML = "";
@@ -1396,13 +1490,13 @@ function showResult(r, sources) {
   const hasLevels = (r.key_levels?.support || []).length || (r.key_levels?.resistance || []).length;
   document.getElementById("levelsWrap").style.display = hasLevels ? "grid" : "none";
 
-  // Risks
+  // ========== Risks ==========
   const risksList = document.getElementById("risksList"); risksList.innerHTML = "";
   (r.risks || []).forEach(x => { const li = document.createElement("li"); li.textContent = x; risksList.appendChild(li); });
   document.getElementById("risksWrap").style.display = (r.risks || []).length ? "block" : "none";
 }
 
-// ==================== HISTORY ====================
+// ==================== HISTORY (مع التقييم الذاتي) ====================
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); }
   catch (e) { return []; }
@@ -1438,6 +1532,22 @@ function predictionCorrect(item) {
 function renderHistory() {
   const h = getHistory();
   document.getElementById("histCount").textContent = h.length;
+  
+  // ========== التقييم الذاتي (Feedback Loop) ==========
+  const bullishEval = h.filter(x => x.outcome && (x.trend.includes("صعود") || x.trend.includes("Bull")));
+  const bearishEval = h.filter(x => x.outcome && (x.trend.includes("هبوط") || x.trend.includes("Bear")));
+  const correctBull = bullishEval.filter(predictionCorrect).length;
+  const correctBear = bearishEval.filter(predictionCorrect).length;
+  const feedbackEl = document.getElementById("feedbackStats");
+  if (bullishEval.length || bearishEval.length) {
+    feedbackEl.innerHTML = `
+      <span>📈 <b>${t("bullishLabel")}:</b> ${correctBull}/${bullishEval.length} (${bullishEval.length ? Math.round(correctBull/bullishEval.length*100) : 0}%)</span>
+      <span>📉 <b>${t("bearishLabel")}:</b> ${correctBear}/${bearishEval.length} (${bearishEval.length ? Math.round(correctBear/bearishEval.length*100) : 0}%)</span>
+    `;
+  } else {
+    feedbackEl.innerHTML = `<span style="color:var(--text-dim);">${currentLang==="ar"?"لا توجد توقعات مُقيّمة بعد.":"No evaluated forecasts yet."}</span>`;
+  }
+
   const evaluated = h.filter(x => x.outcome && x.trend !== "محايد" && x.trend !== "Neutral");
   const correct = evaluated.filter(predictionCorrect).length;
   const statsBar = document.getElementById("statsBar");
