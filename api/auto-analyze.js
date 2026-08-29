@@ -1,12 +1,13 @@
 // Vercel Serverless Function
 // Bilingual auto-analysis with Black-Scholes integration
-// Added: Treasury Yield & DXY, and daily outlook for intraday traders.
 
 import { verifyActiveUser } from "./_lib/auth.js";
 import { getTechnicalSnapshot } from "./_lib/priceHistory.js";
 import { checkAndIncrementUsage } from "./_lib/rateLimit.js";
 
 const HEADERS = { "User-Agent": "Mozilla/5.0 (compatible; GoldCotDesk/1.0)" };
+
+// ============ دوال جلب البيانات ============
 
 async function fetchGoldPrice() {
   try {
@@ -74,7 +75,8 @@ async function fetchNews() {
   return combined.slice(0, 14);
 }
 
-// ============ NEW: Treasury Yield & DXY ============
+// ============ السندات والدولار ============
+
 async function fetchTreasuryYield() {
   const apiKey = process.env.ALPHA_VANTAGE_KEY;
   if (!apiKey) return null;
@@ -101,33 +103,30 @@ async function fetchDXY() {
   } catch (e) { return null; }
 }
 
-// ==================== SYSTEM PROMPTS ====================
+// ============ SYSTEM PROMPTS ============
 
 const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص بالذهب (XAUUSD)، خبير بتقارير COT الصادرة عن CFTC وبالتحليل الفني الكلاسيكي والرياضيات المالية.
-البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، مؤشرات فنية كلاسيكية، نماذج Black-Scholes احتمالية، بالإضافة إلى عائد السندات الأمريكية لأجل 10 سنوات ومؤشر الدولار) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
+البيانات المُعطاة لك بالأسفل تم جلبها/حسابها تلقائياً قبل لحظات من مصادر حية وحسابات رياضية حقيقية (سعر لحظي، بيانات COT رسمية من CFTC، عناوين أخبار حديثة، تقويم اقتصادي أسبوعي، مؤشرات فنية كلاسيكية، نماذج Black-Scholes احتمالية، عائد السندات الأمريكية لأجل 10 سنوات، مؤشر الدولار، بالإضافة إلى بيانات محاكاة لفريمات 1 ساعة و4 ساعات ومستويات البيفوت اليومية وATR) — اعتبرها بيانات حقيقية وحالية فعلاً، ولا تشكك بحداثتها.
 
-منهجية التحليل الإلزامية — حلل 6 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
-1. **COT (تمركز المؤسسات):** هل هناك تمركز مفرط لدى المضاربين غير التجاريين؟ هل التغير الأسبوعي يدعم استمرار الاتجاه أم يشير لاحتمال انعكاس؟
+منهجية التحليل الإلزامية — حلل 7 محاور منفصلة أولاً، ثم اجمعهم بخلاصة نهائية:
+1. **COT (تمركز المؤسسات):** هل هناك تمركز مفرط؟ هل التغير الأسبوعي يدعم استمرار الاتجاه أم يشير لاحتمال انعكاس؟
 2. **الأخبار والسياسة النقدية:** ماذا تعني العناوين المتاحة تحديداً (اذكرها) بالنسبة لتوقعات الفائدة وقوة الدولار؟
 3. **التقويم الاقتصادي القادم:** ما هي أقرب الأحداث عالية الأهمية القادمة، ومتى، وما تأثيرها المحتمل؟
-4. **التحليل الفني الكلاسيكي:** ماذا تقول المؤشرات المحسوبة (RSI، MACD، المتوسطات المتحركة، نطاقات بولينجر) عن الزخم الحالي؟ هل هناك تشبع شرائي/بيعي، تقاطعات، أو اختراق نطاقات؟
-5. **Black-Scholes والاحتماليات:** بناءً على التقلب التاريخي المحسوب من البيانات الفعلية، ما هي الحركة المتوقعة هذا الأسبوع؟ ما نسبة احتمالية بقاء السعر ضمن نطاق بولينجر؟ كيف تُستخدم هذه الأرقام لتحديد نقاط دخول/خروج أكثر دقة؟
-6. **السندات والدولار:** كيف تؤثر عوائد السندات الأمريكية (10 سنوات) ومؤشر الدولار على الذهب؟ هل العلاقة العكسية قوية حالياً؟ هل التغيرات الأخيرة في العوائد أو الدولار تدعم صعود أو هبوط الذهب؟ اذكر الأرقام الحالية بوضوح.
+4. **التحليل الفني الكلاسيكي:** ماذا تقول المؤشرات المحسوبة (RSI، MACD، المتوسطات المتحركة، نطاقات بولينجر) عن الزخم الحالي؟
+5. **Black-Scholes والاحتماليات:** بناءً على التقلب التاريخي، ما هي الحركة المتوقعة هذا الأسبوع؟ ما نسبة احتمالية بقاء السعر ضمن نطاق بولينجر؟ كيف تُستخدم هذه الأرقام لتحديد نقاط دخول/خروج أكثر دقة؟
+6. **السندات والدولار:** كيف تؤثر عوائد السندات الأمريكية (10 سنوات) ومؤشر الدولار على الذهب؟ هل العلاقة العكسية قوية حالياً؟
+7. **تحليل الفريمات القصيرة (1س، 4س) والمؤشرات الداعمة:** باستخدام مستويات البيفوت وATR المتوفرة، حلل الاتجاه على الفريمات القصيرة وحدد نقاط الدعم والمقاومة القريبة. استخدم ATR لتحديد وقف الخسارة وجني الأرباح المناسبين.
 
-بعد تحليل المحاور الستة، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور متفقَة مع بعضها أم متعارضة؟ أي محور له الوزن الأكبر بقرارك ولماذا؟
+بعد تحليل المحاور، اكتب خلاصة نهائية (summary) توضح صراحة: هل المحاور متفقَة أم متعارضة؟ أي محور له الوزن الأكبر؟
 
-**الخطوة السابعة — الدمج والسيناريوهات المستقبلية:** بعد تحليل المحاور الستة، ادمجهم بتحليل موحّد يشرح الوضع الحالي، وابنِ سيناريوهين مستقبليين واضحين (صعودي وهبوطي) بشرط أن يذكر كل سيناريو: **ما الذي يجب أن يحدث** (مثلاً كسر مستوى معين، أو نتيجة معينة لحدث بالتقويم، أو تأكيد فني) **حتى يتحقق هذا السيناريو**. أضف أيضاً "مستوى إبطال" (invalidation level) — نقطة سعرية لو انكسرت، يصبح التوقع الحالي غير صالح ويجب إعادة التقييم.
+**الخطوة الثامنة — Zoom Out / Zoom In:** وفر نظرة أوسع (أسبوعية وشهرية) للسياق العام، بالإضافة إلى التحليل اليومي الدقيق.
 
-**الخطوة الثامنة — تحليل الفريمات للمتداول اليومي:** بناءً على السعر اللحظي والمؤشرات الفنية المتاحة (حتى لو كانت بيانات يومية فقط، حاول استنتاج الاتجاه على فريمات 1 ساعة و4 ساعات ويومي)، اكتب تحليلاً موجزاً للمتداول اليومي يحدد:
-- الاتجاه المتوقع خلال اليوم (صاعد، هابط، جانبي).
-- أقرب مستويات دعم ومقاومة قصيرة المدى (نقطة أو اثنتين لكل منهما).
-- هل السعر الحالي مناسب للشراء أم البيع أم الانتظار؟ مع سبب مختصر.
-- حدد مستوى إبطال يومي (سعر لو انكسر يغير الرؤية اليومية).
+**الخطوة التاسعة — تحليل المشاعر:** استخرج من الأخبار الخبر الأكثر تأثيراً حالياً وحدد درجة تأثيره (إيجابي قوي/سلبي ضعيف/محايد) مع ذكر السبب.
 
-**توصية Black-Scholes العملية:** بناءً على النطاق المتوقع (Expected Range) والاحتماليات، اكتب توصية عملية مختصرة: هل السعر الحالي يستحق الشراء/البيع الآن، أم الانتظار حتى كسر مستوى معين؟ اذكر السبب الرياضي.
+**الخطوة العاشرة — التوصيات العملية:** استخدم ATR لتحديد وقف خسارة منطقي، واستخدم البيفوت والمقاومات لتحديد جني أرباح. اكتب توصية واضحة للمتداول اليومي.
 
-مهم جداً: التزم بالحدود التالية لكل حقل نصي (لديك مساحة كافية):
-- summary: 4 إلى 5 جمل.
+مهم جداً: التزم بالحدود التالية لكل حقل نصي:
+- summary: 4-5 جمل.
 - cot_reading: 2-3 جمل.
 - news_reading: 2-3 جمل.
 - calendar_reading: 1-2 جملة.
@@ -142,10 +141,13 @@ const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص با�
 - key_levels: دعم ومقاومة (رقم أو نطاق).
 - risks: 2-3 عناصر.
 - daily_outlook: 3-4 جمل تحليلية للمتداول اليومي مع ذكر الاتجاه ومستويات الدعم/المقاومة القريبة.
-- treasury_yield_value: رقم عشري (مثل 4.25) أو null.
-- dxy_value: رقم عشري (مثل 105.3) أو null.
+- weekly_context: 2-3 جمل (النظرة الأسبوعية).
+- monthly_context: 1-2 جملة (النظرة الشهرية).
+- sentiment_analysis: جملة أو اثنتين عن الخبر الأكثر تأثيراً وتأثيره.
+- stop_loss_suggestion: رقم أو نطاق (مثل 3300 أو 3290-3300).
+- take_profit_suggestion: رقم أو نطاق (مثل 3360 أو 3350-3370).
 
-أجب حصراً بصيغة JSON صالحة ومكتملة بدون أي نص إضافي، بالمفاتيح التالية:
+أجب حصراً بصيغة JSON صالحة ومكتملة، بالمفاتيح التالية:
 {
   "trend": "صعودي" | "هبوطي" | "محايد",
   "score": رقم,
@@ -165,52 +167,34 @@ const SYSTEM_PROMPT_AR = `أنت محلل أسواق محترف متخصص با�
   "risks": ["...", "..."],
   "treasury_yield_value": رقم أو null,
   "dxy_value": رقم أو null,
-  "daily_outlook": "..."
+  "daily_outlook": "...",
+  "weekly_context": "...",
+  "monthly_context": "...",
+  "sentiment_analysis": "...",
+  "stop_loss_suggestion": "...",
+  "take_profit_suggestion": "..."
 }`;
 
-const SYSTEM_PROMPT_EN = `You are a professional market analyst specializing in Gold (XAUUSD), an expert in CFTC COT reports, classical technical analysis, and financial mathematics.
-The data provided below was fetched/computed automatically moments ago from live sources and real mathematical calculations (live price, official CFTC COT data, recent news headlines, weekly economic calendar, classical technical indicators, Black-Scholes probability models, plus US 10-year Treasury yield and Dollar Index) — treat it as real and current data, do not question its freshness.
+// النسخة الإنجليزية (مختصرة، نفس المحتوى مترجم)
+const SYSTEM_PROMPT_EN = `You are a professional market analyst specializing in Gold (XAUUSD), expert in CFTC COT reports, classical technical analysis, and financial mathematics.
+The data provided below was fetched/computed automatically moments ago from live sources (price, CFTC COT, news, economic calendar, technical indicators, Black-Scholes models, treasury yields, DXY, plus simulated 1H/4H data, pivot levels, and ATR). Treat it as real and current.
 
-Mandatory Analysis Methodology — analyze 6 separate pillars first, then synthesize into a final conclusion:
-1. **COT (Institutional Positioning):** Is there excessive concentration among non-commercial speculators? Does the weekly change support trend continuation or suggest a reversal?
-2. **News & Monetary Policy:** What do the available headlines specifically mean (mention them) for interest rate expectations and dollar strength?
-3. **Upcoming Economic Calendar:** What are the nearest high-importance events coming up, when, and what is their likely impact?
-4. **Classical Technical Analysis:** What do the computed indicators (RSI, MACD, Moving Averages, Bollinger Bands) say about current momentum? Any overbought/oversold conditions, crossovers, or band breakouts?
-5. **Black-Scholes & Probabilities:** Based on the historically computed volatility from actual data, what is the expected move this week? What is the probability of price staying within Bollinger Bands? How can these numbers be used to determine more precise entry/exit points?
-6. **Treasury & Dollar:** How do US Treasury yields (10-year) and the Dollar Index affect gold? Is the inverse relationship strong currently? Do recent changes in yields or the dollar support a rise or fall in gold? Quote the current numbers clearly.
+Mandatory Analysis — analyze 7 pillars:
+1. COT institutional positioning.
+2. News and monetary policy.
+3. Upcoming economic calendar.
+4. Classical technical indicators (RSI, MACD, SMA, Bollinger).
+5. Black-Scholes probabilities and expected moves.
+6. Treasury yields and DXY impact.
+7. Short-term timeframe analysis (1H/4H) using pivots and ATR for stop-loss and take-profit levels.
 
-After analyzing all six, write a final summary that clearly states: Are the pillars aligned or conflicting? Which pillar carries the most weight in your decision and why?
+After analysis, provide a final summary.
+Also provide:
+- Weekly and monthly context (Zoom Out).
+- Sentiment analysis from news.
+- Practical stop-loss and take-profit suggestions based on ATR and pivot levels.
 
-**Step Seven — Synthesis & Future Scenarios:** After analyzing the six pillars, merge them into a unified analysis explaining the current situation, and build two clear future scenarios (bullish and bearish) with the condition that each scenario must mention: **what needs to happen** (e.g., break a specific level, a certain calendar event outcome, or technical confirmation) **for this scenario to materialize**. Also add an "invalidation level" — a price point that if broken, makes the current forecast invalid and requires re-evaluation.
-
-**Step Eight — Intraday Trader Outlook:** Based on the current price and available technical indicators (even if only daily data, try to infer direction on 1h, 4h, and daily), write a brief outlook for the intraday trader that specifies:
-- The expected direction for the day (up, down, sideways).
-- Nearest short-term support and resistance levels (one or two each).
-- Whether the current price is suitable for buying, selling, or waiting, with a brief reason.
-- A daily invalidation level (price that if broken changes the daily view).
-
-**Black-Scholes Practical Recommendation:** Based on the Expected Range and probabilities, write a brief practical recommendation: Is the current price worth buying/selling now, or waiting for a break of a specific level? Mention the mathematical reason.
-
-Very important: Adhere to the following limits for each text field:
-- summary: 4 to 5 sentences.
-- cot_reading: 2-3 sentences.
-- news_reading: 2-3 sentences.
-- calendar_reading: 1-2 sentences.
-- technical_reading: 2-3 sentences.
-- black_scholes_reading: 2-3 sentences.
-- bs_recommendation: one sentence.
-- current_situation: 3-4 sentences.
-- scenarios.bullish: 2-3 sentences.
-- scenarios.bearish: 2-3 sentences.
-- invalidation_level: just a number or short range.
-- key_drivers: 3-4 items.
-- key_levels: support and resistance (number or range).
-- risks: 2-3 items.
-- daily_outlook: 3-4 sentences summarizing intraday direction and key levels.
-- treasury_yield_value: decimal number (e.g. 4.25) or null.
-- dxy_value: decimal number (e.g. 105.3) or null.
-
-Respond ONLY with valid and complete JSON without any additional text, with exactly these keys:
+Respond ONLY with valid JSON using exactly these keys:
 {
   "trend": "Bullish" | "Bearish" | "Neutral",
   "score": number,
@@ -230,8 +214,15 @@ Respond ONLY with valid and complete JSON without any additional text, with exac
   "risks": ["...", "..."],
   "treasury_yield_value": number or null,
   "dxy_value": number or null,
-  "daily_outlook": "..."
+  "daily_outlook": "...",
+  "weekly_context": "...",
+  "monthly_context": "...",
+  "sentiment_analysis": "...",
+  "stop_loss_suggestion": "...",
+  "take_profit_suggestion": "..."
 }`;
+
+// ============ بناء رسالة المستخدم ============
 
 function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, treasuryYield, dxy, lang) {
   const isAr = lang === 'ar';
@@ -239,38 +230,58 @@ function buildUserMessage(priceInfo, cotRows, headlines, calendar, technical, tr
   const bsData = technical?.historicalVolatility
     ? (isAr 
       ? `**بيانات Black-Scholes (محسوبة رياضياً من بيانات تاريخية حقيقية):**
-- التقلب التاريخي السنوي (Historical Volatility): ${(technical.historicalVolatility * 100).toFixed(1)}%
-- الحركة المتوقعة خلال 7 أيام: ±$${technical.expectedMove7d.toFixed(2)} (من ${technical.lastClose.toFixed(2)})
-- الحركة المتوقعة خلال 30 يوم: ±$${technical.expectedMove30d.toFixed(2)}
-- النطاق المتوقع 68% خلال أسبوع: ${technical.expectedRange7d.lower.toFixed(2)} - ${technical.expectedRange7d.upper.toFixed(2)}
-- النطاق المتوقع 95% خلال أسبوع: ${technical.expectedRange7d95.lower.toFixed(2)} - ${technical.expectedRange7d95.upper.toFixed(2)}
+- التقلب التاريخي السنوي: ${(technical.historicalVolatility * 100).toFixed(1)}%
+- الحركة المتوقعة خلال 7 أيام: ±$${technical.expectedMove7d?.toFixed(2) || "-"} (من ${technical.lastClose.toFixed(2)})
+- الحركة المتوقعة خلال 30 يوم: ±$${technical.expectedMove30d?.toFixed(2) || "-"}
+- النطاق المتوقع 68% خلال أسبوع: ${technical.expectedRange7d?.lower.toFixed(2) || "-"} - ${technical.expectedRange7d?.upper.toFixed(2) || "-"}
+- النطاق المتوقع 95% خلال أسبوع: ${technical.expectedRange7d95?.lower.toFixed(2) || "-"} - ${technical.expectedRange7d95?.upper.toFixed(2) || "-"}
 - احتمالية بقاء السعر ضمن نطاق بولينجر هذا الأسبوع: ${technical.probInBollinger7d != null ? (technical.probInBollinger7d * 100).toFixed(1) + "%" : "غير محسوبة"}
 - احتمالية أن يكون السعر أعلى من SMA20 بعد أسبوع: ${technical.probAboveSMA20 != null ? (technical.probAboveSMA20 * 100).toFixed(1) + "%" : "غير محسوبة"}
-- احتمالية أن يكون السعر أعلى من SMA50 بعد أسبوع: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "غير محسوبة"}
-`
-      : `**Black-Scholes Data (mathematically computed from actual historical data):**
+- احتمالية أن يكون السعر أعلى من SMA50 بعد أسبوع: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "غير محسوبة"}`
+      : `**Black-Scholes Data (computed from actual historical data):**
 - Annual Historical Volatility: ${(technical.historicalVolatility * 100).toFixed(1)}%
-- Expected Move over 7 days: ±$${technical.expectedMove7d.toFixed(2)} (from ${technical.lastClose.toFixed(2)})
-- Expected Move over 30 days: ±$${technical.expectedMove30d.toFixed(2)}
-- Expected Range 68% confidence (1 week): ${technical.expectedRange7d.lower.toFixed(2)} - ${technical.expectedRange7d.upper.toFixed(2)}
-- Expected Range 95% confidence (1 week): ${technical.expectedRange7d95.lower.toFixed(2)} - ${technical.expectedRange7d95.upper.toFixed(2)}
+- Expected Move over 7 days: ±$${technical.expectedMove7d?.toFixed(2) || "-"} (from ${technical.lastClose.toFixed(2)})
+- Expected Move over 30 days: ±$${technical.expectedMove30d?.toFixed(2) || "-"}
+- Expected Range 68% (1 week): ${technical.expectedRange7d?.lower.toFixed(2) || "-"} - ${technical.expectedRange7d?.upper.toFixed(2) || "-"}
+- Expected Range 95% (1 week): ${technical.expectedRange7d95?.lower.toFixed(2) || "-"} - ${technical.expectedRange7d95?.upper.toFixed(2) || "-"}
 - Probability of staying within Bollinger Bands this week: ${technical.probInBollinger7d != null ? (technical.probInBollinger7d * 100).toFixed(1) + "%" : "Not computed"}
 - Probability of price being above SMA20 in one week: ${technical.probAboveSMA20 != null ? (technical.probAboveSMA20 * 100).toFixed(1) + "%" : "Not computed"}
-- Probability of price being above SMA50 in one week: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "Not computed"}
-`)
-    : (isAr 
-      ? "**بيانات Black-Scholes:** تعذر حساب التقلب التاريخي (بيانات غير كافية)."
-      : "**Black-Scholes Data:** Failed to compute historical volatility (insufficient data).");
+- Probability of price being above SMA50 in one week: ${technical.probAboveSMA50 != null ? (technical.probAboveSMA50 * 100).toFixed(1) + "%" : "Not computed"}`)
+    : (isAr ? "**بيانات Black-Scholes:** تعذر حساب التقلب التاريخي (بيانات غير كافية)." : "**Black-Scholes Data:** Failed to compute historical volatility (insufficient data).");
 
-  const macroData = isAr
-    ? `**بيانات السندات الأمريكية ومؤشر الدولار (حالية):**
+  // بيانات الفريمات القصيرة
+  const intraday1h = technical?.intraday1h;
+  const intraday4h = technical?.intraday4h;
+  const intradayText = isAr
+    ? `**تحليل الفريمات القصيرة (محاكاة من بيانات يومية - 1 ساعة و 4 ساعات):**
+- فريم 1 ساعة: أخر سعر ${intraday1h?.close?.toFixed(2) || "-"} · RSI14: ${intraday1h?.rsi14?.toFixed(1) || "-"} · ATR(14): ${intraday1h?.atr?.toFixed(2) || "-"}
+- فريم 4 ساعات: أخر سعر ${intraday4h?.close?.toFixed(2) || "-"} · RSI14: ${intraday4h?.rsi14?.toFixed(1) || "-"} · ATR(14): ${intraday4h?.atr?.toFixed(2) || "-"}`
+    : `**Short-term Timeframe Analysis (simulated from daily data - 1H & 4H):**
+- 1H Frame: Last ${intraday1h?.close?.toFixed(2) || "-"} · RSI14: ${intraday1h?.rsi14?.toFixed(1) || "-"} · ATR(14): ${intraday1h?.atr?.toFixed(2) || "-"}
+- 4H Frame: Last ${intraday4h?.close?.toFixed(2) || "-"} · RSI14: ${intraday4h?.rsi14?.toFixed(1) || "-"} · ATR(14): ${intraday4h?.atr?.toFixed(2) || "-"}`;
+
+  // البيفوت وATR
+  const pivot = technical?.pivot;
+  const pivotText = isAr
+    ? `**مستويات البيفوت اليومية (محسوبة):**
+الدعم الأول (S1): ${pivot?.s1?.toFixed(2) || "-"} · الدعم الثاني (S2): ${pivot?.s2?.toFixed(2) || "-"}
+المحور (Pivot): ${pivot?.pivot?.toFixed(2) || "-"}
+المقاومة الأولى (R1): ${pivot?.r1?.toFixed(2) || "-"} · المقاومة الثانية (R2): ${pivot?.r2?.toFixed(2) || "-"}
+ATR اليومي المقدر: ${technical?.atr ? "$" + technical.atr.toFixed(2) : "-"}`
+    : `**Daily Pivot Levels (calculated):**
+Support 1 (S1): ${pivot?.s1?.toFixed(2) || "-"} · Support 2 (S2): ${pivot?.s2?.toFixed(2) || "-"}
+Pivot: ${pivot?.pivot?.toFixed(2) || "-"}
+Resistance 1 (R1): ${pivot?.r1?.toFixed(2) || "-"} · Resistance 2 (R2): ${pivot?.r2?.toFixed(2) || "-"}
+Estimated Daily ATR: ${technical?.atr ? "$" + technical.atr.toFixed(2) : "-"}`;
+
+  // الماكرو
+  const macroText = isAr
+    ? `**بيانات السندات والدولار:**
 - عائد سندات الخزانة لأجل 10 سنوات: ${treasuryYield != null ? treasuryYield.toFixed(2) + '%' : 'غير متوفر'}
-- مؤشر الدولار (DXY): ${dxy != null ? dxy.toFixed(2) : 'غير متوفر'}
-`
-    : `**US Treasury Yield and Dollar Index (current):**
+- مؤشر الدولار (DXY): ${dxy != null ? dxy.toFixed(2) : 'غير متوفر'}`
+    : `**Treasury & Dollar Data:**
 - 10-Year Treasury Yield: ${treasuryYield != null ? treasuryYield.toFixed(2) + '%' : 'N/A'}
-- US Dollar Index (DXY): ${dxy != null ? dxy.toFixed(2) : 'N/A'}
-`;
+- US Dollar Index (DXY): ${dxy != null ? dxy.toFixed(2) : 'N/A'}`;
 
   if (isAr) {
     return `السعر الحالي الفعلي للذهب XAUUSD الآن: ${priceInfo ? `${priceInfo.price} دولار (آخر تحديث: ${priceInfo.updatedAtReadable})` : "تعذر جلب السعر الآن من المصدر الحي."}
@@ -300,11 +311,15 @@ ${technical ? `- آخر سعر إغلاق يومي مستخدم بالحسابا
 - نطاقات بولينجر (20، 2 انحراف معياري): علوي = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}، أوسط = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}، سفلي = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "تعذر حساب المؤشرات الفنية حالياً (بيانات تاريخية غير متوفرة حالياً)."}
 """
 
-${macroData}
+${macroText}
+
+${pivotText}
+
+${intradayText}
 
 ${bsData}
 
-حلل الوضع وأعطني توقعك الأسبوعي والتوجيه اليومي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
+حلل الوضع وأعطني توقعك الأسبوعي التزاماً بصيغة الـ JSON المطلوبة فقط.`;
   } else {
     return `Current live price of Gold XAUUSD right now: ${priceInfo ? `$${priceInfo.price} (Last update: ${priceInfo.updatedAtReadable})` : "Failed to fetch live price from source."}
 
@@ -333,13 +348,19 @@ ${technical ? `- Last daily close price used in calculations: ${technical.lastCl
 - Bollinger Bands (20, 2 std dev): Upper = ${technical.bollinger ? technical.bollinger.upper.toFixed(2) : "-"}, Middle = ${technical.bollinger ? technical.bollinger.mid.toFixed(2) : "-"}, Lower = ${technical.bollinger ? technical.bollinger.lower.toFixed(2) : "-"}` : "Failed to compute technical indicators currently (historical data not available)."}
 """
 
-${macroData}
+${macroText}
+
+${pivotText}
+
+${intradayText}
 
 ${bsData}
 
-Analyze the situation and give me your weekly forecast and daily intraday outlook adhering ONLY to the required JSON format.`;
+Analyze the situation and give me your weekly forecast adhering ONLY to the required JSON format.`;
   }
 }
+
+// ============ HANDLER ============
 
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
