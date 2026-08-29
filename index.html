@@ -390,6 +390,27 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
 .qs-value { font-family: var(--font-mono); font-size: 16px; color: var(--gold); font-weight: 700; }
 .qs-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
+/* Macro Card */
+.macro-card {
+  background: var(--bg-elevated); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px 16px; margin-bottom: 12px; display: none;
+}
+.macro-inner {
+  display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+}
+.macro-item {
+  display: flex; align-items: baseline; gap: 6px;
+}
+.macro-label {
+  font-size: 12px; color: var(--text-dim);
+}
+.macro-value {
+  font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--gold);
+}
+.macro-impact {
+  font-size: 12px; color: var(--text-dim); flex: 1; text-align: left;
+}
+
 /* History */
 .hist-item {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -604,6 +625,21 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     </div>
   </div>
 
+  <!-- Macro Data Card -->
+  <div class="macro-card" id="macroCard">
+    <div class="macro-inner">
+      <div class="macro-item">
+        <span class="macro-label">🇺🇸 <span data-i18n="macroYield">عائد السندات 10 سنوات</span></span>
+        <span class="macro-value" id="macroYield">—</span>
+      </div>
+      <div class="macro-item">
+        <span class="macro-label">💵 <span data-i18n="macroDXY">مؤشر الدولار (DXY)</span></span>
+        <span class="macro-value" id="macroDXY">—</span>
+      </div>
+      <div class="macro-impact" id="macroImpact"></div>
+    </div>
+  </div>
+
   <!-- Auto Analyze -->
   <div class="auto-card">
     <div class="auto-title" data-i18n="autoTitle">⚡ تحليل تلقائي كامل</div>
@@ -630,6 +666,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     </div>
     <p class="summary" id="resSummary"></p>
     <div class="current-situation" id="resCurrentSituation" style="display:none;"></div>
+    <div class="current-situation" id="resDailyOutlook" style="display:none; background:var(--panel); border-color:var(--gold-dim);"></div>
 
     <div class="grid2">
       <div class="split"><div class="split-title mono">📊 <span data-i18n="readCot">قراءة COT</span></div><div class="split-body" id="resCot"></div></div>
@@ -868,6 +905,10 @@ const i18n = {
     correct: "✓ صحّت",
     incorrect: "✗ ما صحّت",
     daysLeft: (d) => `باقي ${d} يوم على الاشتراك`,
+    // إضافات للكلمات الجديدة
+    macroYield: "عائد السندات 10 سنوات",
+    macroDXY: "مؤشر الدولار (DXY)",
+    dailyOutlookTitle: "📊 نظرة المتداول اليومي",
   },
   en: {
     pageTitle: "Gold Analysis Desk — COT & News Intelligence",
@@ -966,6 +1007,9 @@ const i18n = {
     correct: "✓ Correct",
     incorrect: "✗ Incorrect",
     daysLeft: (d) => `${d} days left on subscription`,
+    macroYield: "10-Year Treasury Yield",
+    macroDXY: "Dollar Index (DXY)",
+    dailyOutlookTitle: "📊 Daily Trader Outlook",
   }
 };
 
@@ -1304,7 +1348,7 @@ document.getElementById("histToggle").onclick = () => {
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
-  const { price, cotRows, headlines, calendar, technical } = sources;
+  const { price, cotRows, headlines, calendar, technical, treasuryYield, dxy } = sources;
   let html = "";
   html += `<div class="src-line"><b>${currentLang==="ar"?"السعر المستخدم:":"Price Used:"}</b> ${price ? price.price + " $ (" + (currentLang==="ar"?"تحديث:":"Updated:") + " " + price.updatedAtReadable + ")" : (currentLang==="ar"?"تعذر الجلب":"Failed to fetch")}</div>`;
   html += `<div class="src-line"><b>COT:</b> ${cotRows ? cotRows.length : 0} ${currentLang==="ar"?"صفوف":"rows"}</div>`;
@@ -1315,6 +1359,9 @@ function renderSources(sources) {
     if (technical.historicalVolatility != null) {
       html += `<div class="src-line"><b>BS:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · EM7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range [${technical.expectedRange7d?.lower.toFixed(0) ?? "-"}-${technical.expectedRange7d?.upper.toFixed(0) ?? "-"}]</div>`;
     }
+  }
+  if (treasuryYield != null || dxy != null) {
+    html += `<div class="src-line"><b>${currentLang==="ar"?"السندات والدولار:":"Treasury & DXY:"}</b> 10Y ${treasuryYield != null ? treasuryYield.toFixed(2)+'%' : 'N/A'} · DXY ${dxy != null ? dxy.toFixed(2) : 'N/A'}</div>`;
   }
   if (headlines && headlines.length) {
     html += `<div class="src-line" style="margin-top:6px;"><b>${currentLang==="ar"?"أهم العناوين:":"Top Headlines:"}</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
@@ -1389,6 +1436,9 @@ async function autoAnalyze() {
         news_reading: "", black_scholes_reading: "", bs_recommendation: "",
         key_drivers: [], key_levels: { support: [], resistance: [] },
         risks: [currentLang === "ar" ? "جرّب إعادة المحاولة بعد قليل." : "Try again in a moment."],
+        treasury_yield_value: data._sources?.treasuryYield ?? null,
+        dxy_value: data._sources?.dxy ?? null,
+        daily_outlook: "",
       };
     }
 
@@ -1437,6 +1487,38 @@ function showResult(r, sources) {
   const csEl = document.getElementById("resCurrentSituation");
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
   else { csEl.style.display = "none"; }
+
+  // عرض daily_outlook
+  const dailyEl = document.getElementById("resDailyOutlook");
+  if (r.daily_outlook) {
+    dailyEl.innerHTML = `<span style="font-weight:600; color:var(--gold);">${t("dailyOutlookTitle")}</span><br>${r.daily_outlook}`;
+    dailyEl.style.display = "block";
+  } else {
+    dailyEl.style.display = "none";
+  }
+
+  // Macro Card (Treasury & DXY)
+  const macroCard = document.getElementById("macroCard");
+  if (r.treasury_yield_value != null || r.dxy_value != null) {
+    macroCard.style.display = "block";
+    document.getElementById("macroYield").textContent = r.treasury_yield_value != null ? r.treasury_yield_value.toFixed(2) + '%' : '—';
+    document.getElementById("macroDXY").textContent = r.dxy_value != null ? r.dxy_value.toFixed(2) : '—';
+    // تأثير مختصر
+    let impact = '';
+    if (r.treasury_yield_value != null && r.dxy_value != null) {
+      // مثال بسيط: إذا كان العائد مرتفع والدولار قوي فالضغط على الذهب
+      if (r.treasury_yield_value > 4.0 && r.dxy_value > 105) {
+        impact = currentLang === "ar" ? 'ضغط على الذهب (علاقة عكسية)' : 'Pressure on gold (inverse correlation)';
+      } else if (r.treasury_yield_value < 3.5 && r.dxy_value < 103) {
+        impact = currentLang === "ar" ? 'دعم للذهب' : 'Support for gold';
+      } else {
+        impact = currentLang === "ar" ? 'تأثير متعادل نسبياً' : 'Relatively neutral impact';
+      }
+    }
+    document.getElementById("macroImpact").textContent = impact;
+  } else {
+    macroCard.style.display = "none";
+  }
 
   // Black-Scholes Card
   const bsCard = document.getElementById("bsCard");
