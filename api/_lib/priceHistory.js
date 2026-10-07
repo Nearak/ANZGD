@@ -1,9 +1,14 @@
-// يجيب سلسلة أسعار يومية للذهب (آخر ~90 يوم) من gold-api.com، مع تخزين مؤقت (Cache)
-// بجدول market_cache بقاعدة بيانات Supabase — لأن endpoint البيانات التاريخية محدود
-// بـ10 طلبات بالساعة، وبكذا كل المشتركين بيستفيدوا من نفس النسخة المخزنة مؤقتاً.
+// بيانات يومية للذهب + مؤشرات فنية مشتقة منها.
+// مهم: هذه الوحدة لا تصف أي بيانات مشتقة على أنها 1H/4H ما لم تكن لدينا بيانات intraday حقيقية.
 
 import { sma, rsi, macd, bollinger } from "./indicators.js";
-import { historicalVolatility, expectedMove, expectedRange, probabilityAbove, probabilityBelow, probabilityInRange } from "./blackScholes.js";
+import {
+  historicalVolatility,
+  expectedMove,
+  expectedRange,
+  probabilityAbove,
+  probabilityInRange
+} from "./blackScholes.js";
 
 const CACHE_TTL_MINUTES = 45;
 const CACHE_KEY = "xau_daily_series";
@@ -11,16 +16,25 @@ const CACHE_KEY = "xau_daily_series";
 async function getCache() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!SUPABASE_URL || !SERVICE_KEY) return null;
+
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/market_cache?key=eq.${CACHE_KEY}&select=value,updated_at`,
-      { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+      {
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`
+        }
+      }
     );
+
     if (!r.ok) return null;
+
     const rows = await r.json();
     return rows?.[0] || null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -28,7 +42,9 @@ async function getCache() {
 async function setCache(value) {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!SUPABASE_URL || !SERVICE_KEY) return;
+
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/market_cache`, {
       method: "POST",
@@ -36,98 +52,348 @@ async function setCache(value) {
         apikey: SERVICE_KEY,
         Authorization: `Bearer ${SERVICE_KEY}`,
         "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates",
+        Prefer: "resolution=merge-duplicates"
       },
-      body: JSON.stringify({ key: CACHE_KEY, value, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        key: CACHE_KEY,
+        value,
+        updated_at: new Date().toISOString()
+      })
     });
-  } catch (e) {}
+  } catch {}
 }
 
 async function fetchFreshDailySeries() {
   const apiKey = process.env.GOLD_API_KEY;
   if (!apiKey) return null;
+
   const end = Math.floor(Date.now() / 1000);
-  const start = end - 90 * 24 * 60 * 60;
-  const url = `https://api.gold-api.com/history?symbol=XAU&startTimestamp=${start}&endTimestamp=${end}&groupBy=day&aggregation=avg&orderBy=asc`;
+  const start = end - 120 * 24 * 60 * 60;
+
+  const url =
+    `https://api.gold-api.com/history?symbol=XAU` +
+    `&startTimestamp=${start}` +
+    `&endTimestamp=${end}` +
+    `&groupBy=day` +
+    `&aggregation=avg` +
+    `&orderBy=asc`;
+
   try {
-    const r = await fetch(url, { headers: { "x-api-key": apiKey } });
+    const r = await fetch(url, {
+      headers: {
+        "x-api-key": apiKey
+      }
+    });
+
     if (!r.ok) return null;
+
     const rows = await r.json();
-    return rows.map((row) => Number(row.avg_price)).filter((v) => !isNaN(v));
-  } catch (e) {
+
+    return rows
+      .map(row => Number(row.avg_price))
+      .filter(v => Number.isFinite(v) && v > 0);
+  } catch {
     return null;
   }
 }
 
-// ======== دوال جديدة لتحسين تحليل المتداول ========
+function pctChange(a, b) {
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) {
+    return null;
+  }
 
-// 1. حساب البيفوت اليومي (Pivot Points) - كلاسيكي
-function calculatePivotPoints(high, low, close) {
-  if (high == null || low == null || close == null) return null;
-  const pivot = (high + low + close) / 3;
-  const r1 = 2 * pivot - low;
-  const s1 = 2 * pivot - high;
-  const r2 = pivot + (high - low);
-  const s2 = pivot - (high - low);
-  const r3 = high + 2 * (pivot - low);
-  const s3 = low - 2 * (high - pivot);
-  return { pivot, r1, s1, r2, s2, r3, s3 };
+  return ((a - b) / b) * 100;
 }
 
-// 2. تقدير ATR (متوسط المدى الحقيقي)
-function estimateATR(lastClose, historicalVolatility, period = 14) {
-  if (!lastClose || !historicalVolatility || historicalVolatility <= 0) return null;
-  const dailyVol = historicalVolatility / Math.sqrt(252);
-  return dailyVol * lastClose;
-}
-
-// 3. دالة لحساب ATR من سلسلة (للفريمات القصيرة)
-function calcATRFromCloses(closes, period = 14) {
+function avgAbsMove(closes, period = 14) {
   if (!closes || closes.length < period + 1) return null;
-  const trs = [];
-  for (let i = 1; i < closes.length; i++) {
-    const diff = Math.abs(closes[i] - closes[i - 1]);
-    trs.push(diff);
+
+  const diffs = [];
+
+  for (let i = closes.length - period; i < closes.length; i++) {
+    const prev = closes[i - 1];
+    const cur = closes[i];
+
+    if (Number.isFinite(prev) && Number.isFinite(cur)) {
+      diffs.push(Math.abs(cur - prev));
+    }
   }
-  if (trs.length < period) return null;
-  let atr = trs.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  for (let i = period; i < trs.length; i++) {
-    atr = (atr * (period - 1) + trs[i]) / period;
-  }
-  return atr;
+
+  return diffs.length
+    ? diffs.reduce((a, b) => a + b, 0) / diffs.length
+    : null;
 }
 
-// 4. دالة لحساب RSI من سلسلة (للفريمات القصيرة)
-function calcRSIFromCloses(closes, period = 14) {
-  if (!closes || closes.length < period + 1) return null;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) {
-    const diff = closes[i] - closes[i - 1];
-    if (diff >= 0) gains += diff;
-    else losses -= diff;
-  }
-  let avgGain = gains / period, avgLoss = losses / period;
-  for (let i = period + 1; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1];
-    const gain = diff > 0 ? diff : 0;
-    const loss = diff < 0 ? -diff : 0;
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
-  }
-  if (avgLoss === 0) return 100;
-  return 100 - 100 / (1 + avgGain / avgLoss);
+function rollingVolatility(closes, lookback = 20) {
+  if (!closes || closes.length < lookback + 1) return null;
+
+  return historicalVolatility(
+    closes.slice(-(lookback + 1))
+  );
 }
 
-// ======== التصدير الرئيسي ========
+function rangeLevels(series) {
+  if (!series || series.length < 5) return null;
+
+  const last5 = series.slice(-5);
+  const last20 = series.slice(-Math.min(20, series.length));
+
+  const high5 = Math.max(...last5);
+  const low5 = Math.min(...last5);
+
+  const high20 = Math.max(...last20);
+  const low20 = Math.min(...last20);
+
+  return {
+    high5,
+    low5,
+    midpoint5: (high5 + low5) / 2,
+
+    high20,
+    low20,
+    midpoint20: (high20 + low20) / 2
+  };
+}
+
+function classifyMarketRegime({
+  lastClose,
+  sma20Val,
+  sma50Val,
+  rsi14,
+  macdVal,
+  bb,
+  hv20,
+  hvFull
+}) {
+  let trendScore = 0;
+
+  if (sma20Val != null) {
+    trendScore += lastClose > sma20Val ? 1 : -1;
+  }
+
+  if (sma20Val != null && sma50Val != null) {
+    trendScore += sma20Val > sma50Val ? 1 : -1;
+  }
+
+  if (macdVal?.histogram != null) {
+    trendScore +=
+      macdVal.histogram > 0
+        ? 1
+        : macdVal.histogram < 0
+        ? -1
+        : 0;
+  }
+
+  if (rsi14 != null) {
+    if (rsi14 >= 55) trendScore += 1;
+    else if (rsi14 <= 45) trendScore -= 1;
+  }
+
+  const volRatio =
+    hv20 && hvFull
+      ? hv20 / hvFull
+      : null;
+
+  const highVolatility =
+    volRatio != null
+      ? volRatio >= 1.25
+      : false;
+
+  const bbWidthPct =
+    bb && lastClose
+      ? ((bb.upper - bb.lower) / lastClose) * 100
+      : null;
+
+  let type = "range";
+
+  if (Math.abs(trendScore) >= 3) {
+    type =
+      trendScore > 0
+        ? "bull_trend"
+        : "bear_trend";
+  } else if (Math.abs(trendScore) === 2) {
+    type =
+      trendScore > 0
+        ? "bull_bias"
+        : "bear_bias";
+  }
+
+  if (highVolatility) {
+    type += "_high_vol";
+  }
+
+  return {
+    type,
+    trendScore,
+    highVolatility,
+    volatilityRatio: volRatio,
+    bollingerWidthPct: bbWidthPct
+  };
+}
+
+function technicalConfluence({
+  lastClose,
+  sma20Val,
+  sma50Val,
+  rsi14,
+  macdVal,
+  bb,
+  momentum5d,
+  momentum20d
+}) {
+  const factors = [];
+
+  const add = (name, score, reason) => {
+    factors.push({
+      name,
+      score,
+      reason
+    });
+  };
+
+  if (sma20Val != null) {
+    add(
+      "price_vs_sma20",
+      lastClose > sma20Val ? 12 : -12,
+      lastClose > sma20Val
+        ? "السعر فوق SMA20"
+        : "السعر تحت SMA20"
+    );
+  }
+
+  if (sma20Val != null && sma50Val != null) {
+    add(
+      "sma_structure",
+      sma20Val > sma50Val ? 14 : -14,
+      sma20Val > sma50Val
+        ? "SMA20 فوق SMA50"
+        : "SMA20 تحت SMA50"
+    );
+  }
+
+  if (macdVal?.histogram != null) {
+    add(
+      "macd",
+      macdVal.histogram > 0 ? 12 : -12,
+      macdVal.histogram > 0
+        ? "MACD إيجابي"
+        : "MACD سلبي"
+    );
+  }
+
+  if (rsi14 != null) {
+    const score =
+      rsi14 >= 55 && rsi14 <= 70
+        ? 10
+        : rsi14 > 70
+        ? 4
+        : rsi14 <= 45 && rsi14 >= 30
+        ? -10
+        : rsi14 < 30
+        ? -4
+        : 0;
+
+    add(
+      "rsi",
+      score,
+      `RSI14 = ${rsi14.toFixed(1)}`
+    );
+  }
+
+  if (momentum5d != null) {
+    add(
+      "momentum5d",
+      momentum5d > 0
+        ? 8
+        : momentum5d < 0
+        ? -8
+        : 0,
+      `زخم 5 أيام ${momentum5d.toFixed(2)}%`
+    );
+  }
+
+  if (momentum20d != null) {
+    add(
+      "momentum20d",
+      momentum20d > 0
+        ? 8
+        : momentum20d < 0
+        ? -8
+        : 0,
+      `زخم 20 يوم ${momentum20d.toFixed(2)}%`
+    );
+  }
+
+  if (bb) {
+    let score = 0;
+
+    if (lastClose > bb.mid) score += 6;
+    else score -= 6;
+
+    if (lastClose >= bb.upper) score -= 3;
+
+    if (lastClose <= bb.lower) score += 3;
+
+    add(
+      "bollinger",
+      score,
+      `الموقع داخل بولينجر بالنسبة للمنتصف ${
+        lastClose > bb.mid
+          ? "إيجابي"
+          : "سلبي"
+      }`
+    );
+  }
+
+  const raw =
+    factors.reduce(
+      (sum, factor) => sum + factor.score,
+      0
+    );
+
+  const maxAbs =
+    factors.reduce(
+      (sum, factor) =>
+        sum + Math.abs(factor.score),
+      0
+    ) || 1;
+
+  const normalized =
+    Math.round(
+      (raw / maxAbs) * 100
+    );
+
+  const direction =
+    normalized >= 25
+      ? "bullish"
+      : normalized <= -25
+      ? "bearish"
+      : "neutral";
+
+  return {
+    score: normalized,
+    direction,
+    factors
+  };
+}
 
 export async function getTechnicalSnapshot() {
   const cached = await getCache();
+
   let series = null;
   let fromCache = false;
 
   if (cached?.updated_at) {
-    const ageMinutes = (Date.now() - new Date(cached.updated_at).getTime()) / 60000;
-    if (ageMinutes < CACHE_TTL_MINUTES && Array.isArray(cached.value)) {
+    const ageMinutes =
+      (
+        Date.now() -
+        new Date(cached.updated_at).getTime()
+      ) / 60000;
+
+    if (
+      ageMinutes < CACHE_TTL_MINUTES &&
+      Array.isArray(cached.value)
+    ) {
       series = cached.value;
       fromCache = true;
     }
@@ -135,121 +401,232 @@ export async function getTechnicalSnapshot() {
 
   if (!series) {
     series = await fetchFreshDailySeries();
-    if (series && series.length > 0) {
+
+    if (series?.length) {
       await setCache(series);
-    } else if (cached && Array.isArray(cached.value)) {
+    } else if (
+      cached &&
+      Array.isArray(cached.value)
+    ) {
       series = cached.value;
       fromCache = true;
     }
   }
 
-  if (!series || series.length < 15) return null;
-
-  const lastClose = series[series.length - 1];
-  const hv = historicalVolatility(series);
-  const riskFreeRate = 0.045;
-
-  // المؤشرات الأساسية
-  const sma20Val = series.length >= 20 ? sma(series, 20) : null;
-  const sma50Val = series.length >= 50 ? sma(series, 50) : null;
-  const bb = series.length >= 20 ? bollinger(series, 20, 2) : null;
-  const rsi14 = rsi(series, 14);
-  const macdVal = series.length >= 35 ? macd(series) : null;
-
-  // --- الحسابات الجديدة ---
-  // أعلى وأدنى سعر خلال آخر 5 أيام (للبيفوت)
-  const last5 = series.slice(-5);
-  const high5 = Math.max(...last5);
-  const low5 = Math.min(...last5);
-  const close = lastClose;
-
-  // البيفوت اليومي
-  const pivotData = calculatePivotPoints(high5, low5, close);
-
-  // تقدير ATR
-  const atrValue = estimateATR(lastClose, hv);
-
-  // حساب ATR من السلسلة مباشرة
-  const atrFromSeries = hv ? calcATRFromCloses(series, 14) : null;
-
-  // تحليل الفريمات القصيرة (محاكاة من البيانات اليومية)
-  // سنقوم بمحاكاة فريم 1 ساعة و 4 ساعات عن طريق تقسيم التغيرات اليومية
-  // هذه محاكاة تقريبية، لكنها أفضل من لا شيء في حالة عدم وجود API خارجي
-  let intraday1h = null;
-  let intraday4h = null;
-  if (series.length >= 20) {
-    // نحاكي فريم 1 ساعة: نقسم اليوم إلى 24 جزء، ونأخذ عينات من السلسلة
-    // طريقة بسيطة: نأخذ نقاط من السلسلة بفاصل 4 (تقريباً 6 ساعات لكل نقطة) للتشبيه بـ 4 ساعات
-    const step1h = Math.floor(series.length / 24);
-    const step4h = Math.floor(series.length / 6);
-    if (step1h > 1) {
-      const closes1h = [];
-      for (let i = 0; i < series.length; i += step1h) {
-        closes1h.push(series[i]);
-      }
-      if (closes1h.length > 10) {
-        intraday1h = {
-          close: closes1h[closes1h.length - 1],
-          rsi14: calcRSIFromCloses(closes1h, 14),
-          atr: calcATRFromCloses(closes1h, 14)
-        };
-      }
-    }
-    if (step4h > 1) {
-      const closes4h = [];
-      for (let i = 0; i < series.length; i += step4h) {
-        closes4h.push(series[i]);
-      }
-      if (closes4h.length > 10) {
-        intraday4h = {
-          close: closes4h[closes4h.length - 1],
-          rsi14: calcRSIFromCloses(closes4h, 14),
-          atr: calcATRFromCloses(closes4h, 14)
-        };
-      }
-    }
+  if (!series || series.length < 15) {
+    return null;
   }
 
-  // الاحتمالات
+  const lastClose = series.at(-1);
+
+  const hv =
+    historicalVolatility(series);
+
+  const hv20 =
+    rollingVolatility(series, 20);
+
+  const riskFreeRate = 0.045;
+
+  const sma20Val =
+    series.length >= 20
+      ? sma(series, 20)
+      : null;
+
+  const sma50Val =
+    series.length >= 50
+      ? sma(series, 50)
+      : null;
+
+  const bb =
+    series.length >= 20
+      ? bollinger(series, 20, 2)
+      : null;
+
+  const rsi14 =
+    rsi(series, 14);
+
+  const macdVal =
+    series.length >= 35
+      ? macd(series)
+      : null;
+
+  const levels =
+    rangeLevels(series);
+
+  const move14 =
+    avgAbsMove(series, 14);
+
+  const momentum5d =
+    series.length >= 6
+      ? pctChange(
+          lastClose,
+          series.at(-6)
+        )
+      : null;
+
+  const momentum20d =
+    series.length >= 21
+      ? pctChange(
+          lastClose,
+          series.at(-21)
+        )
+      : null;
+
+  const distanceFromSma20Pct =
+    sma20Val
+      ? pctChange(
+          lastClose,
+          sma20Val
+        )
+      : null;
+
+  const distanceFromSma50Pct =
+    sma50Val
+      ? pctChange(
+          lastClose,
+          sma50Val
+        )
+      : null;
+
+  const marketRegime =
+    classifyMarketRegime({
+      lastClose,
+      sma20Val,
+      sma50Val,
+      rsi14,
+      macdVal,
+      bb,
+      hv20,
+      hvFull: hv
+    });
+
+  const confluence =
+    technicalConfluence({
+      lastClose,
+      sma20Val,
+      sma50Val,
+      rsi14,
+      macdVal,
+      bb,
+      momentum5d,
+      momentum20d
+    });
+
   let probAboveSMA20 = null;
   let probAboveSMA50 = null;
   let probInBollinger7d = null;
+
   if (hv != null) {
     const T7 = 7 / 365;
-    if (sma20Val != null) probAboveSMA20 = probabilityAbove(lastClose, sma20Val, T7, riskFreeRate, hv);
-    if (sma50Val != null) probAboveSMA50 = probabilityAbove(lastClose, sma50Val, T7, riskFreeRate, hv);
-    if (bb != null) probInBollinger7d = probabilityInRange(lastClose, bb.lower, bb.upper, 7, hv);
+
+    if (sma20Val != null) {
+      probAboveSMA20 =
+        probabilityAbove(
+          lastClose,
+          sma20Val,
+          T7,
+          riskFreeRate,
+          hv
+        );
+    }
+
+    if (sma50Val != null) {
+      probAboveSMA50 =
+        probabilityAbove(
+          lastClose,
+          sma50Val,
+          T7,
+          riskFreeRate,
+          hv
+        );
+    }
+
+    if (bb != null) {
+      probInBollinger7d =
+        probabilityInRange(
+          lastClose,
+          bb.lower,
+          bb.upper,
+          7,
+          hv
+        );
+    }
   }
 
   return {
     lastClose,
+
     sma20: sma20Val,
     sma50: sma50Val,
+
     rsi14,
     macd: macdVal,
     bollinger: bb,
 
-    // Black-Scholes
-    historicalVolatility: hv != null ? hv : null,
-    expectedMove7d: hv != null ? expectedMove(lastClose, hv, 7) : null,
-    expectedMove30d: hv != null ? expectedMove(lastClose, hv, 30) : null,
-    expectedRange7d: hv != null ? expectedRange(lastClose, hv, 7, 0.68) : null,
-    expectedRange7d95: hv != null ? expectedRange(lastClose, hv, 7, 0.95) : null,
+    momentum5d,
+    momentum20d,
+
+    distanceFromSma20Pct,
+    distanceFromSma50Pct,
+
+    historicalVolatility: hv,
+    recentVolatility20d: hv20,
+
+    expectedMove7d:
+      hv != null
+        ? expectedMove(
+            lastClose,
+            hv,
+            7
+          )
+        : null,
+
+    expectedMove30d:
+      hv != null
+        ? expectedMove(
+            lastClose,
+            hv,
+            30
+          )
+        : null,
+
+    expectedRange7d:
+      hv != null
+        ? expectedRange(
+            lastClose,
+            hv,
+            7,
+            0.68
+          )
+        : null,
+
+    expectedRange7d95:
+      hv != null
+        ? expectedRange(
+            lastClose,
+            hv,
+            7,
+            0.95
+          )
+        : null,
+
     probAboveSMA20,
     probAboveSMA50,
     probInBollinger7d,
 
-    // إضافات المتداول الجديدة
-    atr: atrValue || atrFromSeries || null,
-    pivot: pivotData,
-    high5,
-    low5,
+    avgAbsDailyMove14: move14,
 
-    // بيانات الفريمات المحاكاة (أو يمكن جلبها من API خارجي)
-    intraday1h,
-    intraday4h,
+    rangeLevels: levels,
+
+    marketRegime,
+
+    technicalConfluence:
+      confluence,
+
+    intradayAvailable: false,
 
     dataPoints: series.length,
-    fromCache,
+
+    fromCache
   };
 }
