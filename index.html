@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl" data-theme="dark">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title data-i18n="pageTitle">مكتب تحليل الذهب — COT & News Intelligence</title>
+<html lang="ar" dir="rtl" data-theme="dark"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title data-i18n="pageTitle">مكتب تحليل الذهب — COT &amp; News Intelligence</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ============ CSS VARIABLES & THEMES ============ */
@@ -437,6 +435,28 @@ ul.list { margin: 0; padding-inline-start: 20px; font-size: 13.5px; line-height:
 .sltp-row .tp { color: var(--bull); }
 .sltp-row .mono { font-family: var(--font-mono); font-weight: 600; }
 
+
+/* Trader Decision Dashboard */
+.trader-dashboard { margin:16px 0; padding:18px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg, rgba(201,162,39,.05), transparent); }
+.td-top { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+.td-decision { font-family:var(--font-serif); font-size:23px; font-weight:700; }
+.td-decision.buy { color:var(--bull); } .td-decision.sell { color:var(--bear); } .td-decision.wait { color:var(--gold); }
+.td-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
+.td-metric { background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:9px 10px; text-align:center; }
+.td-metric .k { font-size:10px; color:var(--text-dim); } .td-metric .v { font-family:var(--font-mono); font-size:14px; margin-top:3px; }
+.trade-plan-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+.plan-cell { background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:10px; }
+.plan-cell .k { font-size:10px; color:var(--text-dim); margin-bottom:4px; } .plan-cell .v { font-family:var(--font-mono); font-size:12px; line-height:1.5; }
+.plan-cell.entry { grid-column:span 2; } .plan-cell.stop .v { color:var(--bear); } .plan-cell.tp .v { color:var(--bull); }
+.pillar-bars { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:7px 14px; }
+.pillar-row { display:grid; grid-template-columns:82px 1fr 42px; gap:7px; align-items:center; font-size:11px; color:var(--text-dim); }
+.pillar-track { height:7px; border-radius:5px; background:var(--panel); overflow:hidden; position:relative; }
+.pillar-mid { position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--line-strong); }
+.pillar-fill { position:absolute; top:0; bottom:0; border-radius:5px; background:var(--gold); }
+.no-trade { margin-top:12px; padding:10px 12px; border-radius:7px; background:rgba(201,162,39,.08); border:1px solid var(--gold-dim); font-size:12.5px; color:var(--text-secondary); }
+.data-quality { font-size:11px; color:var(--text-dim); }
+@media(max-width:720px){ .td-metrics{grid-template-columns:repeat(2,1fr)} .trade-plan-grid{grid-template-columns:1fr 1fr} .plan-cell.entry{grid-column:1/-1} .pillar-bars{grid-template-columns:1fr} }
+
 /* History */
 .hist-item {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -515,14 +535,14 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <svg class="hero-svg" viewBox="0 0 340 130" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style="stop-color:#8A7332"/>
-          <stop offset="50%" style="stop-color:#C9A227"/>
-          <stop offset="100%" style="stop-color:#E8C547"/>
+          <stop offset="0%" style="stop-color:#8A7332"></stop>
+          <stop offset="50%" style="stop-color:#C9A227"></stop>
+          <stop offset="100%" style="stop-color:#E8C547"></stop>
         </linearGradient>
       </defs>
-      <polyline points="10,95 60,75 100,85 150,45 190,60 230,25 270,40 330,15" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="330" cy="15" r="5" fill="#C9A227"/>
-      <line x1="10" y1="115" x2="330" y2="115" stroke="var(--line)" stroke-width="1"/>
+      <polyline points="10,95 60,75 100,85 150,45 190,60 230,25 270,40 330,15" fill="none" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <circle cx="330" cy="15" r="5" fill="#C9A227"></circle>
+      <line x1="10" y1="115" x2="330" y2="115" stroke="var(--line)" stroke-width="1"></line>
       <text x="10" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W1</text>
       <text x="170" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W2</text>
       <text x="310" y="125" fill="var(--text-dim)" font-size="9" font-family="monospace">W3</text>
@@ -576,13 +596,13 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <div class="feature-card">
       <div class="feature-icon">⏰</div>
       <div class="feature-title">نظرة يومية + فريمات</div>
-      <div class="feature-desc">تحليل متعدد الفريمات (1س، 4س، يومي) مع مستويات دعم ومقاومة وتوصيات محددة لوقف الخسارة وجني الأرباح.</div>
+      <div class="feature-desc">قراءة يومية واقعية للزخم والاتجاه مع مستويات نطاق 5 و20 يوم وخطة دخول/إبطال/أهداف بدون اختلاق فريمات غير متوفرة.</div>
     </div>
   </div>
 
   <div class="about-section">
     <h2 data-i18n="aboutTitle">ليش هالموقع؟</h2>
-    <p data-i18n="aboutDesc">بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين مع توصيات دقيقة لوقف الخسارة وجني الأرباح.</p>
+    <p data-i18n="aboutDesc">بدل ما تلاحق COT والأخبار والمؤشرات يدوياً، المنصة تجمعها في لوحة قرار واحدة: توافق المحاور، جودة الإشارة، حالة السوق، منطقة دخول مشروطة، إبطال، أهداف، ومخاطر — مع خفض الثقة تلقائياً عند نقص البيانات.</p>
   </div>
 
   <div class="landing-footer">
@@ -597,11 +617,11 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <div class="auth-title" id="authTitle" data-i18n="authLogin">تسجيل الدخول</div>
     <div class="auth-field">
       <label data-i18n="labelEmail">البريد الإلكتروني</label>
-      <input type="email" id="authEmail" placeholder="you@example.com" />
+      <input type="email" id="authEmail" placeholder="you@example.com">
     </div>
     <div class="auth-field">
       <label data-i18n="labelPassword">كلمة السر</label>
-      <input type="password" id="authPassword" placeholder="••••••••" />
+      <input type="password" id="authPassword" placeholder="••••••••">
     </div>
     <button class="btn-primary auth-btn" id="authSubmitBtn" data-i18n="btnLogin">دخول</button>
     <div class="auth-switch">
@@ -668,7 +688,7 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
   <!-- Auto Analyze -->
   <div class="auto-card">
     <div class="auto-title" data-i18n="autoTitle">⚡ تحليل تلقائي كامل</div>
-    <div class="auto-sub" data-i18n="autoSub">يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار + فريمات 1 ساعة و4 ساعات، ويحلل كل شي بضغطة زر.</div>
+    <div class="auto-sub" data-i18n="autoSub">يجمع السعر اللحظي + COT + الأخبار + التقويم + المؤشرات اليومية + نماذج التقلب والاحتمال + السندات والدولار، ثم يبني قراراً مشروطاً بدرجة توافق وجودة بيانات واضحة.</div>
     <button class="btn-primary" id="autoBtn">
       <span id="autoBtnIcon">⚡</span>
       <span id="autoBtnLabel" data-i18n="btnAnalyze">حلّل الآن تلقائياً</span>
@@ -692,6 +712,33 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <p class="summary" id="resSummary"></p>
     <div class="current-situation" id="resCurrentSituation" style="display:none;"></div>
     <div class="current-situation" id="resDailyOutlook" style="display:none; background:var(--panel); border-color:var(--gold-dim);"></div>
+
+    <div class="trader-dashboard" id="traderDashboard" style="display:none;">
+      <div class="td-top">
+        <div>
+          <div class="data-quality" id="tdDataQuality"></div>
+          <div class="td-decision" id="tdDecision"></div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:3px;" id="tdRegime"></div>
+        </div>
+        <div class="data-quality" id="tdIntradayNote"></div>
+      </div>
+      <div class="td-metrics">
+        <div class="td-metric"><div class="k" id="tdConfluenceLabel">التوافق</div><div class="v" id="tdConfluence">—</div></div>
+        <div class="td-metric"><div class="k" id="tdQualityLabel">جودة الإشارة</div><div class="v" id="tdQuality">—</div></div>
+        <div class="td-metric"><div class="k" id="tdConfidenceLabel">الثقة</div><div class="v" id="tdConfidence">—</div></div>
+        <div class="td-metric"><div class="k">R:R</div><div class="v" id="tdRR">—</div></div>
+      </div>
+      <div class="trade-plan-grid" id="tradePlanGrid">
+        <div class="plan-cell entry"><div class="k" id="tdEntryLabel">منطقة/شرط الدخول</div><div class="v" id="tdEntry">—</div></div>
+        <div class="plan-cell stop"><div class="k" id="tdStopLabel">وقف الخسارة</div><div class="v" id="tdStop">—</div></div>
+        <div class="plan-cell tp"><div class="k">TP1</div><div class="v" id="tdTP1">—</div></div>
+        <div class="plan-cell tp"><div class="k">TP2</div><div class="v" id="tdTP2">—</div></div>
+        <div class="plan-cell tp"><div class="k">TP3</div><div class="v" id="tdTP3">—</div></div>
+        <div class="plan-cell"><div class="k" id="tdInvalidationLabel">الإبطال</div><div class="v" id="tdInvalidation">—</div></div>
+      </div>
+      <div class="pillar-bars" id="pillarBars"></div>
+      <div class="no-trade" id="tdNoTrade" style="display:none;"></div>
+    </div>
 
     <!-- Tabs -->
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 8px;">
@@ -757,9 +804,9 @@ footer { text-align: center; margin-top: 30px; font-size: 11.5px; color: var(--t
     <span id="histArrow">▾</span>
   </button>
   <div id="histBody" style="display:none; margin-top:10px;">
-    <div class="feedback-stats" id="feedbackStats"></div>
-    <div class="stats-bar" id="statsBar"></div>
-    <div id="histList"></div>
+    <div class="feedback-stats" id="feedbackStats"><span style="color:var(--text-dim);">لا توجد توقعات مُقيّمة بعد.</span></div>
+    <div class="stats-bar" id="statsBar">لسا ما في توقعات مُقيّمة — بعد ما تعرف نتيجة الأسبوع الفعلية، اختارها من كل عنصر بالأسفل.</div>
+    <div id="histList"><div style="color:var(--text-dim); font-size:13px; padding:10px;">لسا ما في تحليلات محفوظة.</div></div>
   </div>
 
   <footer data-i18n="footer">هذا التحليل بمساعدة الذكاء الاصطناعي لأغراض تعليمية وليس توصية استثمارية.</footer>
@@ -789,7 +836,7 @@ const i18n = {
     featBS: "Black-Scholes احتمالي",
     featBSDesc: "التقلب التاريخي، الحركة المتوقعة، والنطاق الاحتمالي — لقرار بيع/شراء مدعوم بالرياضيات.",
     aboutTitle: "ليش هالموقع؟",
-    aboutDesc: "بدل ما تقضي وقتك تلاحق تقارير COT، وتفتش الأخبار، وتحسب المؤشرات الفنية يدوياً — الموقع بيجمعلك كل شي بمكان واحد، ويحللهم مع بعض بمنهجية واضحة (6 محاور منفصلة قبل الخلاصة)، ويعطيك سيناريوهات مستقبلية واضحة وتحليل يومي للمتداولين مع توصيات دقيقة لوقف الخسارة وجني الأرباح.",
+    aboutDesc: "بدل ما تلاحق COT والأخبار والمؤشرات يدوياً، المنصة تجمعها في لوحة قرار واحدة: توافق المحاور، جودة الإشارة، حالة السوق، منطقة دخول مشروطة، إبطال، أهداف، ومخاطر — مع خفض الثقة تلقائياً عند نقص البيانات.",
     disclaimer: "هذا الموقع أداة تحليلية تعليمية تعتمد على الذكاء الاصطناعي، وليس توصية استثمارية أو استشارة مالية مرخصة. القرار والمسؤولية النهائية تعود دائماً لك.",
     authLogin: "تسجيل الدخول",
     authSignup: "إنشاء حساب جديد",
@@ -814,7 +861,7 @@ const i18n = {
     qsRange: "النطاق المتوقع",
     qs68Conf: "ثقة 68%",
     autoTitle: "⚡ تحليل تلقائي كامل",
-    autoSub: "يجيب السعر اللحظي + بيانات COT الرسمية + أهم الأخبار + التقويم الاقتصادي + المؤشرات الفنية الكلاسيكية + نماذج Black-Scholes الاحتمالية + بيانات السندات والدولار + فريمات 1 ساعة و4 ساعات، ويحلل كل شي بضغطة زر.",
+    autoSub: "يجمع السعر اللحظي + COT + الأخبار + التقويم + المؤشرات اليومية + نماذج التقلب والاحتمال + السندات والدولار، ثم يبني قراراً مشروطاً بدرجة توافق وجودة بيانات واضحة.",
     btnAnalyze: "حلّل الآن تلقائياً",
     readCot: "قراءة COT",
     readNews: "قراءة الأخبار",
@@ -876,7 +923,7 @@ const i18n = {
     featBS: "Black-Scholes Probability",
     featBSDesc: "Historical volatility, expected move, and probability range — for a buy/sell decision backed by math.",
     aboutTitle: "Why This Platform?",
-    aboutDesc: "Instead of chasing COT reports, hunting news, and calculating technical indicators manually — this platform brings everything together in one place, analyzes them with a clear methodology (6 separate pillars), and gives you clear future scenarios and daily trader outlook with precise stop-loss and take-profit recommendations.",
+    aboutDesc: "The platform combines COT, news, macro and real daily technical data into one decision dashboard with confluence, signal quality, market regime, conditional entry, invalidation and targets, while lowering confidence when data is incomplete.",
     disclaimer: "This platform is an educational analytical tool powered by AI, not investment advice or licensed financial consulting. The final decision and responsibility always rest with you.",
     authLogin: "Sign In",
     authSignup: "Create Account",
@@ -901,7 +948,7 @@ const i18n = {
     qsRange: "Expected Range",
     qs68Conf: "68% Confidence",
     autoTitle: "⚡ Full Auto Analysis",
-    autoSub: "Fetches live price + official CFTC COT data + key news + economic calendar + classical technical indicators + Black-Scholes probability models + treasury & DXY data + 1H & 4H timeframes, and analyzes everything with one click.",
+    autoSub: "Combines live price, CFTC COT, news, calendar, real daily technical indicators, volatility/probability context, treasury and DXY data into one risk-aware decision dashboard.",
     btnAnalyze: "Analyze Now",
     readCot: "COT Reading",
     readNews: "News Reading",
@@ -1198,7 +1245,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function renderSources(sources) {
   const box = document.getElementById("sourcesBox");
   if (!sources) { box.style.display = "none"; return; }
-  const { price, cotRows, headlines, calendar, technical, treasuryYield, dxy, intraday1h, intraday4h } = sources;
+  const { price, cotRows, headlines, calendar, technical, treasuryYield, dxy, dataQuality } = sources;
   let html = "";
   html += `<div class="src-line"><b>${currentLang==="ar"?"السعر المستخدم:":"Price Used:"}</b> ${price ? price.price + " $ (" + (currentLang==="ar"?"تحديث:":"Updated:") + " " + price.updatedAtReadable + ")" : (currentLang==="ar"?"تعذر الجلب":"Failed to fetch")}</div>`;
   html += `<div class="src-line"><b>COT:</b> ${cotRows ? cotRows.length : 0} ${currentLang==="ar"?"صفوف":"rows"}</div>`;
@@ -1209,23 +1256,21 @@ function renderSources(sources) {
     if (technical.historicalVolatility != null) {
       html += `<div class="src-line"><b>BS:</b> HV ${(technical.historicalVolatility * 100).toFixed(1)}% · EM7d ±$${technical.expectedMove7d?.toFixed(2) ?? "-"} · Range [${technical.expectedRange7d?.lower.toFixed(0) ?? "-"}-${technical.expectedRange7d?.upper.toFixed(0) ?? "-"}]</div>`;
     }
-    // عرض ATR والبيفوت
-    if (technical.atr != null) {
-      html += `<div class="src-line"><b>📏 ATR:</b> $${technical.atr.toFixed(2)}</div>`;
+    if (technical.avgAbsDailyMove14 != null) {
+      html += `<div class="src-line"><b>📏 ${currentLang==="ar"?"متوسط الحركة اليومية 14ي":"14d avg absolute move"}:</b> $${technical.avgAbsDailyMove14.toFixed(2)}</div>`;
     }
-    if (technical.pivot) {
-      html += `<div class="src-line"><b>📍 البيفوت:</b> Pivot $${technical.pivot.pivot?.toFixed(2) ?? "-"} · R1 $${technical.pivot.r1?.toFixed(2) ?? "-"} · S1 $${technical.pivot.s1?.toFixed(2) ?? "-"}</div>`;
+    if (technical.rangeLevels) {
+      html += `<div class="src-line"><b>📍 ${currentLang==="ar"?"نطاق 5 أيام":"5d reference range"}:</b> ${technical.rangeLevels.low5?.toFixed(2) ?? "-"} — ${technical.rangeLevels.high5?.toFixed(2) ?? "-"}</div>`;
     }
   }
   if (treasuryYield != null || dxy != null) {
     html += `<div class="src-line"><b>${currentLang==="ar"?"السندات والدولار:":"Treasury & DXY:"}</b> 10Y ${treasuryYield != null ? treasuryYield.toFixed(2)+'%' : 'N/A'} · DXY ${dxy != null ? dxy.toFixed(2) : 'N/A'}</div>`;
   }
-  // عرض بيانات الفريمات
-  if (intraday1h || intraday4h) {
-    html += `<div class="src-line"><b>⏰ الفريمات:</b>`;
-    if (intraday1h) html += ` 1H: ${intraday1h.close} (RSI ${intraday1h.rsi?.toFixed(1) ?? "-"})`;
-    if (intraday4h) html += ` · 4H: ${intraday4h.close} (RSI ${intraday4h.rsi?.toFixed(1) ?? "-"})`;
-    html += `</div>`;
+  if (technical?.marketRegime) {
+    html += `<div class="src-line"><b>${currentLang==="ar"?"نظام السوق:":"Market regime:"}</b> ${technical.marketRegime.type} · ${currentLang==="ar"?"التوافق الفني":"Technical confluence"} ${technical.technicalConfluence?.score ?? "-"}/100</div>`;
+  }
+  if (dataQuality) {
+    html += `<div class="src-line"><b>${currentLang==="ar"?"جودة البيانات:":"Data quality:"}</b> ${dataQuality.score}%${dataQuality.missing?.length ? ` · ${currentLang==="ar"?"ناقص":"Missing"}: ${dataQuality.missing.join(", ")}` : ""}</div>`;
   }
   if (headlines && headlines.length) {
     html += `<div class="src-line" style="margin-top:6px;"><b>${currentLang==="ar"?"أهم العناوين:":"Top Headlines:"}</b><br>${headlines.slice(0,5).map(h=>"• "+h).join("<br>")}</div>`;
@@ -1310,6 +1355,8 @@ async function autoAnalyze() {
     const entry = {
       ts: Date.now(),
       date: new Date().toLocaleDateString(currentLang === "ar" ? "ar-EG" : "en-US", { year: "numeric", month: "short", day: "numeric" }),
+      analysis_price: data._sources?.price?.price ?? null,
+      data_quality_score: data._sources?.dataQuality?.score ?? parsed.data_quality_score ?? null,
       ...parsed, outcome: null
     };
     showResult(entry, data._sources);
@@ -1331,6 +1378,54 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+
+function renderTraderDashboard(r, sources) {
+  const box = document.getElementById("traderDashboard");
+  if (!r) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  const ar = currentLang === "ar";
+  const decision = r.decision || (ar ? "انتظار" : "Wait");
+  const d = document.getElementById("tdDecision");
+  d.textContent = decision;
+  d.className = "td-decision " + ((decision.includes("شراء") || decision.includes("Buy")) ? "buy" : (decision.includes("بيع") || decision.includes("Sell")) ? "sell" : "wait");
+  document.getElementById("tdRegime").textContent = (ar ? "حالة السوق: " : "Market regime: ") + (r.market_regime || sources?.technical?.marketRegime?.type || "—");
+  const dq = sources?.dataQuality?.score ?? r.data_quality_score;
+  document.getElementById("tdDataQuality").textContent = (ar ? "جودة البيانات " : "Data quality ") + (dq != null ? dq + "%" : "—");
+  document.getElementById("tdIntradayNote").textContent = sources?.technical?.intradayAvailable === false ? (ar ? "لا توجد بيانات 1H/4H حقيقية في المصدر الحالي" : "No real 1H/4H data in current source") : "";
+  document.getElementById("tdConfluenceLabel").textContent = ar ? "التوافق" : "Confluence";
+  document.getElementById("tdQualityLabel").textContent = ar ? "جودة الإشارة" : "Signal quality";
+  document.getElementById("tdConfidenceLabel").textContent = ar ? "الثقة" : "Confidence";
+  document.getElementById("tdEntryLabel").textContent = ar ? "منطقة/شرط الدخول" : "Entry zone / condition";
+  document.getElementById("tdStopLabel").textContent = ar ? "وقف الخسارة" : "Stop loss";
+  document.getElementById("tdInvalidationLabel").textContent = ar ? "الإبطال" : "Invalidation";
+  document.getElementById("tdConfluence").textContent = (r.confluence_score ?? r.score ?? 0) + "/100";
+  document.getElementById("tdQuality").textContent = (r.signal_quality ?? 0) + "%";
+  document.getElementById("tdConfidence").textContent = (r.confidence ?? 0) + "%";
+  const plan = r.trade_plan || {};
+  document.getElementById("tdRR").textContent = plan.risk_reward || "—";
+  document.getElementById("tdEntry").textContent = plan.entry_zone || "—";
+  document.getElementById("tdStop").textContent = plan.stop_loss || r.stop_loss_suggestion || "—";
+  document.getElementById("tdTP1").textContent = plan.tp1 || r.take_profit_suggestion || "—";
+  document.getElementById("tdTP2").textContent = plan.tp2 || "—";
+  document.getElementById("tdTP3").textContent = plan.tp3 || "—";
+  document.getElementById("tdInvalidation").textContent = plan.invalidation || r.invalidation_level || "—";
+
+  const labels = ar ? {cot:"COT",news:"الأخبار",technical:"الفني",macro:"الماكرو",probability:"الاحتمالات",calendar_risk:"مخاطر التقويم"} : {cot:"COT",news:"News",technical:"Technical",macro:"Macro",probability:"Probability",calendar_risk:"Calendar risk"};
+  const wrap = document.getElementById("pillarBars"); wrap.innerHTML = "";
+  Object.entries(r.pillar_scores || {}).forEach(([key,val]) => {
+    const n = Number(val) || 0;
+    const risk = key === "calendar_risk";
+    const pos = risk ? Math.max(0, Math.min(100,n)) : Math.max(-100, Math.min(100,n));
+    const left = risk ? 0 : (pos >= 0 ? 50 : 50 + pos/2);
+    const width = risk ? pos : Math.abs(pos)/2;
+    const row = document.createElement("div"); row.className = "pillar-row";
+    row.innerHTML = `<span>${labels[key] || key}</span><span class="pillar-track"><span class="pillar-mid"></span><span class="pillar-fill" style="left:${left}%;width:${width}%;"></span></span><span class="mono">${pos}</span>`;
+    wrap.appendChild(row);
+  });
+  const nt = document.getElementById("tdNoTrade");
+  if (r.no_trade_reason) { nt.textContent = "⚠️ " + r.no_trade_reason; nt.style.display = "block"; } else nt.style.display = "none";
+}
+
 // ==================== SHOW RESULT ====================
 function showResult(r, sources) {
   document.getElementById("resultCard").style.display = "block";
@@ -1348,6 +1443,8 @@ function showResult(r, sources) {
   document.getElementById("resNews").textContent = r.news_reading || "";
   document.getElementById("resCalendar").textContent = r.calendar_reading || "";
   document.getElementById("resTechnical").textContent = r.technical_reading || "";
+
+  renderTraderDashboard(r, sources);
 
   const csEl = document.getElementById("resCurrentSituation");
   if (r.current_situation) { csEl.textContent = r.current_situation; csEl.style.display = "block"; }
@@ -1575,6 +1672,8 @@ function renderHistory() {
         <span>${dirEmoji(item.trend)}</span>
         <span style="color:${dirColor(item.trend)}; font-size:13px;">${item.trend}</span>
         <span class="mono" style="font-size:11px; color:var(--text-dim);">${item.date}</span>
+        ${item.analysis_price ? `<span class="mono" style="font-size:11px; color:var(--gold);">$${item.analysis_price}</span>` : ""}
+        ${item.data_quality_score != null ? `<span class="mono" style="font-size:10px; color:var(--text-muted);">DQ ${item.data_quality_score}%</span>` : ""}
         <span class="mono" style="font-size:11px; color:var(--text-dim);">${t("confLabel")} ${item.confidence}%</span>
         ${badge}
       </div>
@@ -1593,5 +1692,6 @@ applyLang();
 applyTheme();
 document.getElementById("histCount").textContent = getHistory().length;
 </script>
-</body>
-</html>
+
+
+</body><div id="codex-browser-sidebar-comments-root" style="position: fixed; inset: 0px; pointer-events: none; z-index: 2147483647;"></div></html>
